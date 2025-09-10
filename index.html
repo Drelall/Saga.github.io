@@ -16,11 +16,31 @@
   <link rel="stylesheet" href="style.css">
   <link rel="icon" type="image/png" href="assets/icons/plume.png">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
   <header>
     <div class="titre">
-      <h1>RP Tracker1</h1>
+      <h1>RP Tracker</h1>
+    </div>
+    <div class="auth-section">
+      <div id="g_id_onload"
+           data-client_id="239325905492-j5a5skfekv9io2u77tj41aaki4nmc33o.apps.googleusercontent.com"
+           data-context="signup"
+           data-ux_mode="popup"
+           data-callback="handleCredentialResponse">
+      </div>
+      <div class="g_id_signin"
+           data-type="standard"
+           data-shape="rectangular"
+           data-theme="outline"
+           data-text="signup_with"
+           data-size="large">
+      </div>
+      <div id="auth-logged-in" style="display: none;">
+        <span id="user-email"></span>
+        <button id="logout-button" class="btn btn-danger">Déconnexion</button>
+      </div>
     </div>
   </header>
 
@@ -197,6 +217,7 @@
   <div id="notifications"></div>
 
   <script src="js/supabase-config.js"></script>
+  <script src="js/google-auth.js"></script>
   <script src="js/storage.js"></script>
   <script src="renderer.js"></script>
 </body>
