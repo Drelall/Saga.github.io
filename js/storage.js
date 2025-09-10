@@ -1,47 +1,86 @@
 class Storage {
-    static saveRPs(rps) {
-        localStorage.setItem('rps', JSON.stringify(rps));
-    }
-
-    static getRPs() {
-        return JSON.parse(localStorage.getItem('rps')) || [];
-    }
-
-    static savePartners(partners) {
-        localStorage.setItem('partners', JSON.stringify(partners));
-    }
-
-    static getPartners() {
-        return JSON.parse(localStorage.getItem('partners')) || [];
-    }
-
-    static exportData() {
-        const data = {
-            rps: this.getRPs(),
-            partners: this.getPartners()
-        };
-        const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'rp-tracker-data.json';
-        a.click();
-        window.URL.revokeObjectURL(url);
-    }
-
-    static importData(jsonData) {
+    static async saveRPs(rps) {
         try {
-            const data = JSON.parse(jsonData);
-            if (data.rps) this.saveRPs(data.rps);
-            if (data.partners) this.savePartners(data.partners);
-            return true;
-        } catch (e) {
-            console.error('Erreur lors de l\'import:', e);
-            return false;
+            const { data, error } = await supabase
+                .from('rps')
+                .upsert(rps);
+                
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            console.error('Erreur lors de la sauvegarde:', error);
+            throw error;
         }
     }
 
-    static clearData() {
-        localStorage.clear();
+    static async getRPs() {
+        try {
+            const { data, error } = await supabase
+                .from('rps')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            console.error('Erreur lors de la récupération:', error);
+            return [];
+        }
+    }
+
+    static async savePartners(partners) {
+        try {
+            const { data, error } = await supabase
+                .from('partners')
+                .upsert(partners);
+
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            console.error('Erreur lors de la sauvegarde:', error);
+            throw error;
+        }
+    }
+
+    static async getPartners() {
+        try {
+            const { data, error } = await supabase
+                .from('partners')
+                .select('*');
+
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            console.error('Erreur lors de la récupération:', error);
+            return [];
+        }
+    }
+
+    static async deleteRP(id) {
+        try {
+            const { error } = await supabase
+                .from('rps')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+        } catch (error) {
+            console.error('Erreur lors de la suppression:', error);
+            throw error;
+        }
+    }
+
+    static async updateRP(id, data) {
+        try {
+            const { error } = await supabase
+                .from('rps')
+                .update(data)
+                .eq('id', id);
+
+            if (error) throw error;
+        } catch (error) {
+            console.error('Erreur lors de la mise à jour:', error);
+            throw error;
+        }
     }
 }
