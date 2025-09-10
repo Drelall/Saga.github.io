@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>RP Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Application de suivi de RPs en ligne">
+  <meta name="keywords" content="RP, roleplay, tracker, suivi, jeu de rôle">
+  <meta name="author" content="RP Tracker">
+  <meta property="og:title" content="RP Tracker">
+  <meta property="og:description" content="Suivez vos RPs facilement">
+  <meta property="og:image" content="assets/icons/plume.png">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#000000">
+  <link rel="apple-touch-icon" href="assets/icons/plume-192.png">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/png" href="assets/icons/plume.png">
+</head>
+<body>
+  <header>
+    <div class="titre">
+      <h1>RP Tracker</h1>
+    </div>
+  </header>
+
+  <!-- Barre de menu -->
+  <nav class="menubar">
+    <div class="menubar-left">
+      <div class="menu-item">
+        <button class="menu-button" id="fichier-menu">Fichier</button>
+        <ul class="menu-dropdown" id="fichier-dropdown">
+          <li><a href="#" id="exporter-donnees">Exporter les données</a></li>
+          <li class="menu-separator"></li>
+          <li><a href="#" id="importer-donnees">Importer des données</a></li>
+          <li class="menu-separator"></li>
+          <li><a href="#" id="effacer-donnees">Effacer les données</a></li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="menubar-right">
+      <div class="search-container">
+        <input type="text" id="search-input" placeholder="Rechercher dans les RPs..." autocomplete="off">
+        <div class="search-icon">🔍</div>
+        <button type="button" id="clear-search" class="clear-search" style="display: none;">×</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Input file caché pour l'import -->
+  <input type="file" id="import-file" accept=".json" style="display: none;">
+
+  <div class="container">
+    <form id="rpForm" class="formulaire">
+      <div class="form-group">
+        <label for="rpName">Nom du RP</label>
+        <input type="text" id="rpName" placeholder="Ex: Aventure épique..." required>
+      </div>
+      
+      <div class="form-group">
+        <label for="partnerName">Partenaire</label>
+        <div class="autocomplete-container">
+          <input type="text" id="partnerName" placeholder="Nom du partenaire..." required autocomplete="off">
+          <div class="autocomplete-suggestions" id="partnerSuggestions"></div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="rpLocation">Lieu</label>
+        <div class="autocomplete-container">
+          <input type="text" id="rpLocation" placeholder="Ex: Poudlard, Konoha..." autocomplete="off">
+          <div class="autocomplete-suggestions" id="locationSuggestions"></div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="rpType">Type de RP</label>
+        <div class="autocomplete-container">
+          <input type="text" id="rpType" placeholder="Ex: Social, Action..." autocomplete="off">
+          <div class="autocomplete-suggestions" id="typeSuggestions"></div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="rpUniverse">Univers</label>
+        <div class="autocomplete-container">
+          <input type="text" id="rpUniverse" placeholder="Ex: Harry Potter, Naruto..." autocomplete="off">
+          <div class="autocomplete-suggestions" id="universeSuggestions"></div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="rpUrl">Lien du RP (optionnel)</label>
+        <input type="url" id="rpUrl" placeholder="Ex: https://example.com/rp..." autocomplete="off">
+      </div>
+      
+      <div class="form-group">
+        <label for="turn">À qui de poster ?</label>
+        <select id="turn" required>
+          <option value="" disabled selected>Sélectionner...</option>
+          <option value="À ton partenaire de poster">À ton partenaire de poster</option>
+          <option value="À toi de poster">À toi de poster</option>
+          <option value="RP terminé">RP terminé</option>
+          <option value="RP abandonné">RP abandonné</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <button class="btn btn-primary" type="submit">
+          <img src="icone/stylo-a-plume.png" alt="Stylo à plume" class="btn-icon"> Ajouter
+        </button>
+      </div>
+
+      <div class="form-group">
+        <div class="page-navigation-inline">
+          <button class="nav-btn active" id="nav-active" data-page="active">
+            RPs Actifs
+          </button>
+          <button class="nav-btn" id="nav-archive" data-page="archive">
+            RPs Archivés
+          </button>
+        </div>
+      </div>
+    </form>
+
+    <!-- Contrôles de filtrage pour RPs actifs -->
+    <div class="view-controls" id="controls-active">
+      <div class="cards-filter">
+        <span class="filter-label">Filtre :</span>
+        <select id="view-filter">
+          <option value="all">Tous les RPs actifs</option>
+          <option value="À toi de poster">À toi de poster</option>
+          <option value="À ton partenaire de poster">À ton partenaire de poster</option>
+        </select>
+      </div>
+      <div class="cards-filter">
+        <span class="filter-label">Trier par :</span>
+        <select id="sort-select">
+          <option value="time-desc">Plus récent d'abord</option>
+          <option value="time-asc">Plus ancien d'abord</option>
+          <option value="partner-asc">Partenaire A-Z</option>
+          <option value="partner-desc">Partenaire Z-A</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Contrôles de filtrage pour RPs archivés -->
+    <div class="view-controls" id="controls-archive" style="display: none;">
+      <div class="cards-filter">
+        <span class="filter-label">Filtre :</span>
+        <select id="view-filter-archive">
+          <option value="all">Tous les RPs archivés</option>
+          <option value="RP terminé">RPs terminés</option>
+          <option value="RP abandonné">RPs abandonnés</option>
+        </select>
+      </div>
+      <div class="cards-filter">
+        <span class="filter-label">Trier par :</span>
+        <select id="sort-select-archive">
+          <option value="time-desc">Plus récent d'abord</option>
+          <option value="time-asc">Plus ancien d'abord</option>
+          <option value="partner-asc">Partenaire A-Z</option>
+          <option value="partner-desc">Partenaire Z-A</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Vue cartes RPs actifs -->
+    <div id="page-active" class="page-content">
+      <div id="cards-view" class="cards-container">
+        <!-- Les cartes RPs actifs seront ajoutées ici -->
+      </div>
+
+      <!-- État vide pour les RPs actifs -->
+      <div id="cards-empty-state" class="cards-empty-state" style="display: none;">
+        <h3>Aucun RP actif</h3>
+        <p>Ajoutez votre premier RP pour commencer le suivi !</p>
+      </div>
+    </div>
+
+    <!-- Vue cartes RPs archivés -->
+    <div id="page-archive" class="page-content" style="display: none;">
+      <div id="cards-view-archive" class="cards-container">
+        <!-- Les cartes RPs archivés seront ajoutées ici -->
+      </div>
+
+      <!-- État vide pour les RPs archivés -->
+      <div id="cards-empty-state-archive" class="cards-empty-state" style="display: none;">
+        <h3>Aucun RP archivé</h3>
+        <p>Les RPs terminés ou abandonnés apparaîtront ici.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Zone de notifications -->
+  <div id="notifications"></div>
+
+  <script src="js/storage.js"></script>
+  <script src="renderer.js"></script>
+</body>
+</html>
