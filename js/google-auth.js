@@ -55,31 +55,57 @@ async function signInWithGoogle(token) {
 // Fonction de déconnexion
 async function handleLogout() {
     try {
+        // Déconnexion de Supabase
+        await supabase.auth.signOut();
+        
         // Supprime le token du stockage local
         localStorage.removeItem('google_token');
         
         // Réinitialise l'interface
-        document.getElementById('g_id_onload').style.display = 'block';
+        const googleButton = document.querySelector('.g_id_signin');
+        if (googleButton) googleButton.style.display = 'block';
+        
         document.getElementById('auth-logged-in').style.display = 'none';
         document.getElementById('user-email').textContent = '';
         
-        // Déconnexion de Google
-        const auth2 = google.accounts.oauth2.revoke(localStorage.getItem('google_token'));
-        
-        // Rafraîchit la page pour réinitialiser complètement l'état
-        window.location.reload();
-        
+        // Affiche une notification de succès
         showNotification('Déconnexion réussie', 'success');
+        
+        // Recharge la page après un court délai
+        setTimeout(() => {
+            window.location.reload();
+        }, 1000);
     } catch (error) {
         console.error('Erreur lors de la déconnexion:', error);
         showNotification('Erreur lors de la déconnexion', 'error');
     }
 }
 
-// Ajoute l'écouteur d'événement pour le bouton de déconnexion
-document.addEventListener('DOMContentLoaded', () => {
+// Vérifie l'état de connexion au chargement
+document.addEventListener('DOMContentLoaded', async () => {
     const logoutButton = document.getElementById('logout-button');
     if (logoutButton) {
         logoutButton.addEventListener('click', handleLogout);
+    }
+
+    // Vérifie si un token existe
+    const token = localStorage.getItem('google_token');
+    if (token) {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                // L'utilisateur est connecté
+                const googleButton = document.querySelector('.g_id_signin');
+                if (googleButton) googleButton.style.display = 'none';
+                document.getElementById('auth-logged-in').style.display = 'flex';
+                document.getElementById('user-email').textContent = user.email;
+            } else {
+                // Token invalide
+                localStorage.removeItem('google_token');
+            }
+        } catch (error) {
+            console.error('Erreur de vérification:', error);
+            localStorage.removeItem('google_token');
+        }
     }
 });
