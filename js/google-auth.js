@@ -26,7 +26,8 @@ function handleCredentialResponse(response) {
     document.getElementById('user-email').textContent = payload.email;
     
     // Cache le bouton de connexion et affiche la section connectée
-    document.getElementById('g_id_onload').style.display = 'none';
+    const googleButton = document.querySelector('.g_id_signin');
+    if (googleButton) googleButton.style.display = 'none';
     document.getElementById('auth-logged-in').style.display = 'flex';
     
     // Sauvegarde le jeton pour les futures requêtes
@@ -50,3 +51,35 @@ async function signInWithGoogle(token) {
         console.error('Erreur de connexion:', error.message);
     }
 }
+
+// Fonction de déconnexion
+async function handleLogout() {
+    try {
+        // Supprime le token du stockage local
+        localStorage.removeItem('google_token');
+        
+        // Réinitialise l'interface
+        document.getElementById('g_id_onload').style.display = 'block';
+        document.getElementById('auth-logged-in').style.display = 'none';
+        document.getElementById('user-email').textContent = '';
+        
+        // Déconnexion de Google
+        const auth2 = google.accounts.oauth2.revoke(localStorage.getItem('google_token'));
+        
+        // Rafraîchit la page pour réinitialiser complètement l'état
+        window.location.reload();
+        
+        showNotification('Déconnexion réussie', 'success');
+    } catch (error) {
+        console.error('Erreur lors de la déconnexion:', error);
+        showNotification('Erreur lors de la déconnexion', 'error');
+    }
+}
+
+// Ajoute l'écouteur d'événement pour le bouton de déconnexion
+document.addEventListener('DOMContentLoaded', () => {
+    const logoutButton = document.getElementById('logout-button');
+    if (logoutButton) {
+        logoutButton.addEventListener('click', handleLogout);
+    }
+});
