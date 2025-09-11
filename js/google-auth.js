@@ -1,6 +1,21 @@
 const CLIENT_ID = '239325905492-j5a5skfekv9io2u77tj41aaki4nmc33o.apps.googleusercontent.com';
+const AUTHORIZED_ORIGINS = [
+    'https://drelall.github.io',
+    'http://localhost:5500',
+    'http://127.0.0.1:5500'
+];
+
+// Vérifie si l'origine actuelle est autorisée
+const isAuthorizedOrigin = () => {
+    return AUTHORIZED_ORIGINS.some(origin => window.location.origin.startsWith(origin));
+};
 
 function handleCredentialResponse(response) {
+    if (!isAuthorizedOrigin()) {
+        console.error('Origine non autorisée:', window.location.origin);
+        showNotification('Erreur : origine non autorisée', 'error');
+        return;
+    }
     // Le jeton contient les informations de l'utilisateur
     const credential = response.credential;
     
