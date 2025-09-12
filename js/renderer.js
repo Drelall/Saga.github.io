@@ -1,3 +1,6 @@
+import GoogleDriveStorage from './google-drive-storage.js';
+import config from './config.js';
+
 // Gestionnaire de soumission du formulaire
 document.getElementById('rpForm').addEventListener('submit', async (e) => {
     e.preventDefault();
