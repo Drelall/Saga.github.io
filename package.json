@@ -1,15 +1,9 @@
 {
-  "name": "rp-tracker",
+  "name": "saga-backend",
   "version": "1.0.0",
-  "description": "RP Tracker avec backend sécurisé",
-  "scripts": {
-    "build": "echo 'Build completed'",
-    "start": "node backend/server.js"
-  },
+  "description": "Backend pour RP Tracker",
+  "main": "api/config.js",
   "dependencies": {
-    "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
-    "express": "^4.18.2",
     "googleapis": "^128.0.0"
   }
 }
