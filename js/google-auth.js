@@ -1,43 +1,52 @@
-const CLIENT_ID = '239325905492-j5a5skfekv9io2u77tj41aaki4nmc33o.apps.googleusercontent.com';
-const AUTHORIZED_ORIGINS = [
-    'https://drelall.github.io',
-    'http://localhost:5500',
-    'http://127.0.0.1:5500'
-];
-
-// Vérifie si l'origine actuelle est autorisée
-const isAuthorizedOrigin = () => {
-    return AUTHORIZED_ORIGINS.some(origin => window.location.origin.startsWith(origin));
-};
+import config from './config.js';
 
 class GoogleAuth {
     constructor() {
         this.user = null;
-        this.initializeGoogleSignIn();
-        this.bindLogoutButton();
+        this.init();
     }
 
-    async initializeGoogleSignIn() {
+    async init() {
         try {
-            // Initialiser l'API Google
-            await new Promise((resolve) => gapi.load('client:auth2', resolve));
-            await GoogleDriveStorage.initializeGoogleDrive();
-
-            google.accounts.id.initialize({
-                client_id: CLIENT_ID,
-                callback: this.handleCredentialResponse.bind(this)
-            });
-
-            google.accounts.id.renderButton(
-                document.querySelector('.g_id_signin'),
-                { theme: 'outline', size: 'large' }
-            );
-
-            // Vérifier la session existante
+            await this.loadGapiClient();
+            this.initializeGoogleSignIn();
+            this.bindLogoutButton();
             this.checkExistingSession();
         } catch (error) {
             console.error('Erreur d\'initialisation:', error);
         }
+    }
+
+    async loadGapiClient() {
+        return new Promise((resolve, reject) => {
+            gapi.load('client', async () => {
+                try {
+                    await gapi.client.init({
+                        apiKey: config.googleDrive.apiKey,
+                        clientId: config.googleDrive.clientId,
+                        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
+                        scope: 'https://www.googleapis.com/auth/drive.file'
+                    });
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        });
+    }
+
+    initializeGoogleSignIn() {
+        google.accounts.id.initialize({
+            client_id: config.googleDrive.clientId,
+            callback: this.handleCredentialResponse.bind(this),
+            auto_select: false,
+            context: 'signin'
+        });
+
+        google.accounts.id.renderButton(
+            document.querySelector('.g_id_signin'),
+            { theme: 'outline', size: 'large', width: 250 }
+        );
     }
 
     async handleCredentialResponse(response) {
@@ -45,47 +54,24 @@ class GoogleAuth {
             this.user = jwt_decode(response.credential);
             sessionStorage.setItem('google_token', response.credential);
             
-            // Mettre à jour l'interface
-            this.updateUI(true);
+            // Masquer le bouton de connexion
+            document.querySelector('.g_id_signin').style.display = 'none';
             
-            // Charger les cartes depuis Google Drive
+            // Afficher l'interface connectée
+            document.getElementById('auth-logged-in').style.display = 'flex';
+            document.getElementById('user-email').textContent = this.user.email;
+            
+            // Afficher l'application
+            toggleAppVisibility(true);
+            
+            // Charger les cartes
             const cards = await GoogleDriveStorage.loadCards();
             if (window.renderCards) {
                 window.renderCards(cards);
             }
-            
         } catch (error) {
             console.error('Erreur de connexion:', error);
-        }
-    }
-
-    async checkExistingSession() {
-        const token = sessionStorage.getItem('google_token');
-        if (token) {
-            try {
-                this.user = jwt_decode(token);
-                this.updateUI(true);
-                const cards = await GoogleDriveStorage.loadCards();
-                if (window.renderCards) {
-                    window.renderCards(cards);
-                }
-            } catch (error) {
-                console.error('Session invalide:', error);
-                this.logout();
-            }
-        }
-    }
-
-    async logout() {
-        try {
-            this.user = null;
-            sessionStorage.removeItem('google_token');
-            this.updateUI(false);
-            
-            // Recharger la page pour réinitialiser l'état
-            window.location.reload();
-        } catch (error) {
-            console.error('Erreur lors de la déconnexion:', error);
+            showNotification('Erreur lors de la connexion', 'error');
         }
     }
 
@@ -96,22 +82,32 @@ class GoogleAuth {
         }
     }
 
-    updateUI(isSignedIn) {
-        const authLoggedIn = document.getElementById('auth-logged-in');
-        const googleButton = document.querySelector('.g_id_signin');
-        const userEmail = document.getElementById('user-email');
-
-        if (isSignedIn && this.user) {
-            authLoggedIn.style.display = 'flex';
-            googleButton.style.display = 'none';
-            userEmail.textContent = this.user.email;
-        } else {
-            authLoggedIn.style.display = 'none';
-            googleButton.style.display = 'block';
-            userEmail.textContent = '';
+    checkExistingSession() {
+        const token = sessionStorage.getItem('google_token');
+        if (token) {
+            this.user = jwt_decode(token);
+            document.querySelector('.g_id_signin').style.display = 'none';
+            document.getElementById('auth-logged-in').style.display = 'flex';
+            document.getElementById('user-email').textContent = this.user.email;
+            toggleAppVisibility(true);
         }
+    }
+
+    logout() {
+        this.user = null;
+        sessionStorage.removeItem('google_token');
+        google.accounts.id.disableAutoSelect();
+        
+        // Réinitialiser l'interface
+        document.querySelector('.g_id_signin').style.display = 'block';
+        document.getElementById('auth-logged-in').style.display = 'none';
+        document.getElementById('user-email').textContent = '';
+        
+        toggleAppVisibility(false);
+        window.location.reload();
     }
 }
 
-// Initialiser l'authentification
+// Créer une instance de l'authentification
 const auth = new GoogleAuth();
+export default auth;
