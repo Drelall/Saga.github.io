@@ -1199,3 +1199,18 @@ h1 {
     justify-content: center;
     margin-top: 20px;
 }
+
+/* Styles pour le bouton Google */
+.google-signin-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+.auth-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}

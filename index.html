@@ -28,15 +28,18 @@
     <div class="auth-section">
       <div id="g_id_onload"
            data-client_id="239325905492-tu5l9oblsjjq1s3gii35juauscc2qrph.apps.googleusercontent.com"
+           data-callback="handleCredentialResponse"
            data-auto_prompt="false">
       </div>
-      <div class="g_id_signin"
-           data-type="standard"
-           data-size="large"
-           data-theme="outline"
-           data-text="sign_in_with"
-           data-shape="rectangular"
-           data-logo_alignment="left">
+      <div class="google-signin-wrapper">
+        <div class="g_id_signin"
+             data-type="standard"
+             data-size="large"
+             data-theme="outline"
+             data-text="sign_in_with"
+             data-shape="rectangular"
+             data-logo_alignment="left">
+        </div>
       </div>
       <div id="auth-logged-in" style="display: none;">
         <span id="user-email"></span>
@@ -50,15 +53,6 @@
     <div class="welcome-content">
       <h1>Bienvenue sur RP Tracker</h1>
       <p>Connectez-vous avec Google pour commencer à gérer vos RPs</p>
-      <div class="welcome-auth">
-        <div id="welcome-signin" class="g_id_signin"
-             data-type="standard"
-             data-shape="rectangular"
-             data-theme="outline"
-             data-text="signup_with"
-             data-size="large">
-        </div>
-      </div>
     </div>
   </div>
 
