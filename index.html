@@ -45,8 +45,25 @@
     </div>
   </header>
 
+  <!-- Écran d'accueil -->
+  <div id="welcome-screen" class="welcome-screen">
+    <div class="welcome-content">
+      <h1>Bienvenue sur RP Tracker</h1>
+      <p>Connectez-vous avec Google pour commencer à gérer vos RPs</p>
+      <div class="welcome-auth">
+        <div id="welcome-signin" class="g_id_signin"
+             data-type="standard"
+             data-shape="rectangular"
+             data-theme="outline"
+             data-text="signup_with"
+             data-size="large">
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Barre de menu -->
-  <nav class="menubar">
+  <nav class="menubar" style="display: none;">
     <div class="menubar-left">
       <div class="menu-item">
         <button class="menu-button" id="fichier-menu">Fichier</button>
@@ -72,7 +89,7 @@
   <!-- Input file caché pour l'import -->
   <input type="file" id="import-file" accept=".json" style="display: none;">
 
-  <div class="container">
+  <div class="container" style="display: none;">
     <form id="rpForm" class="formulaire">
       <div class="form-group">
         <label for="rpName">Nom du RP</label>

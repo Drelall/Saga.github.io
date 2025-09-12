@@ -1164,6 +1164,38 @@ h1 {
   justify-content: flex-end;
 }
 
-.url-modal-actions .btn {
-  min-width: 100px;
+/* Styles pour l'écran d'accueil */
+.welcome-screen {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f5f5f5;
+    padding: 20px;
+}
+
+.welcome-content {
+    text-align: center;
+    background: white;
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    max-width: 500px;
+    width: 100%;
+}
+
+.welcome-content h1 {
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.welcome-content p {
+    margin-bottom: 30px;
+    color: #666;
+}
+
+.welcome-auth {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
 }

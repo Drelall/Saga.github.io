@@ -91,3 +91,27 @@ function showNotification(message, type = 'info') {
         notification.remove();
     }, 3000);
 }
+
+// Fonction pour gérer l'affichage de l'application
+function toggleAppVisibility(isLoggedIn) {
+    const appContent = document.querySelector('.container');
+    const menubar = document.querySelector('.menubar');
+    const welcomeScreen = document.getElementById('welcome-screen');
+    
+    if (isLoggedIn) {
+        appContent.style.display = 'block';
+        menubar.style.display = 'flex';
+        welcomeScreen.style.display = 'none';
+    } else {
+        appContent.style.display = 'none';
+        menubar.style.display = 'none';
+        welcomeScreen.style.display = 'flex';
+    }
+}
+
+// Initialisation de l'interface
+document.addEventListener('DOMContentLoaded', () => {
+    // Vérifier si l'utilisateur est connecté
+    const isLoggedIn = !!sessionStorage.getItem('google_token');
+    toggleAppVisibility(isLoggedIn);
+});
