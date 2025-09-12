@@ -1,83 +1,109 @@
 // Configuration Google
 const GOOGLE_CLIENT_ID = '239325905492-tu5l9oblsjjq1s3gii35juauscc2qrph.apps.googleusercontent.com';
 
-// Variable globale pour l'utilisateur
+// Variables globales
 let currentUser = null;
 
-// Fonction appelée automatiquement par Google après connexion
-function handleCredentialResponse(response) {
+// Fonction appelée par Google après connexion réussie
+window.handleCredentialResponse = function(response) {
+    console.log('Connexion Google réussie !');
+    
     try {
-        // Décoder le token JWT
-        currentUser = jwt_decode(response.credential);
-        
-        // Stocker le token
-        sessionStorage.setItem('google_token', response.credential);
+        // Décoder le token JWT manuellement (plus simple que jwt_decode)
+        const payload = JSON.parse(atob(response.credential.split('.')[1]));
+        currentUser = payload;
         
         console.log('Utilisateur connecté:', currentUser.email);
         
-        // Masquer le bouton de connexion
-        const googleButton = document.querySelector('.g_id_signin');
-        if (googleButton) {
-            googleButton.style.display = 'none';
-        }
+        // Stocker les informations
+        sessionStorage.setItem('google_token', response.credential);
+        sessionStorage.setItem('user_email', currentUser.email);
+        sessionStorage.setItem('user_id', currentUser.sub);
         
-        // Afficher l'interface connectée
-        const authLoggedIn = document.getElementById('auth-logged-in');
-        const userEmail = document.getElementById('user-email');
-        if (authLoggedIn) authLoggedIn.style.display = 'flex';
-        if (userEmail) userEmail.textContent = currentUser.email;
-        
-        // AFFICHER L'APPLICATION (c'est ça qui manquait !)
-        showApp();
+        // Mettre à jour l'interface
+        updateUIAfterLogin();
         
     } catch (error) {
-        console.error('Erreur de connexion:', error);
+        console.error('Erreur lors du traitement de la connexion:', error);
         alert('Erreur lors de la connexion');
     }
+};
+
+// Fonction pour mettre à jour l'interface après connexion
+function updateUIAfterLogin() {
+    console.log('Mise à jour de l\'interface...');
+    
+    // Masquer le bouton de connexion Google
+    const googleButton = document.querySelector('.g_id_signin');
+    if (googleButton) {
+        googleButton.style.display = 'none';
+        console.log('Bouton Google masqué');
+    }
+    
+    // Afficher les infos utilisateur connecté
+    const authLoggedIn = document.getElementById('auth-logged-in');
+    const userEmail = document.getElementById('user-email');
+    
+    if (authLoggedIn) {
+        authLoggedIn.style.display = 'flex';
+        console.log('Section utilisateur connecté affichée');
+    }
+    
+    if (userEmail && currentUser) {
+        userEmail.textContent = currentUser.email;
+        console.log('Email utilisateur affiché');
+    }
+    
+    // AFFICHER L'APPLICATION - C'est le plus important !
+    showApplication();
 }
 
 // Fonction pour afficher l'application
-function showApp() {
-    console.log('Affichage de l\'application...');
-    
-    const appContent = document.querySelector('.container');
-    const menubar = document.querySelector('.menubar');
-    const welcomeScreen = document.getElementById('welcome-screen');
+function showApplication() {
+    console.log('Affichage de l\'application principale...');
     
     // Masquer l'écran d'accueil
+    const welcomeScreen = document.getElementById('welcome-screen');
     if (welcomeScreen) {
         welcomeScreen.style.display = 'none';
-        console.log('Écran d\'accueil masqué');
+        console.log('✓ Écran d\'accueil masqué');
     }
     
-    // Afficher l'application
-    if (appContent) {
-        appContent.style.display = 'block';
-        console.log('Application affichée');
+    // Afficher le conteneur principal de l'application
+    const appContainer = document.querySelector('.container');
+    if (appContainer) {
+        appContainer.style.display = 'block';
+        console.log('✓ Application principale affichée');
     }
     
     // Afficher la barre de menu
+    const menubar = document.querySelector('.menubar');
     if (menubar) {
         menubar.style.display = 'flex';
-        console.log('Menu affiché');
+        console.log('✓ Barre de menu affichée');
     }
+    
+    console.log('🎉 Application complètement chargée !');
 }
 
-// Fonction pour masquer l'application
-function hideApp() {
-    const appContent = document.querySelector('.container');
-    const menubar = document.querySelector('.menubar');
+// Fonction pour masquer l'application (déconnexion)
+function hideApplication() {
     const welcomeScreen = document.getElementById('welcome-screen');
+    const appContainer = document.querySelector('.container');
+    const menubar = document.querySelector('.menubar');
     
-    if (appContent) appContent.style.display = 'none';
-    if (menubar) menubar.style.display = 'none';
     if (welcomeScreen) welcomeScreen.style.display = 'flex';
+    if (appContainer) appContainer.style.display = 'none';
+    if (menubar) menubar.style.display = 'none';
 }
 
 // Fonction de déconnexion
 function handleLogout() {
+    console.log('Déconnexion...');
+    
+    // Nettoyer les données
     currentUser = null;
-    sessionStorage.removeItem('google_token');
+    sessionStorage.clear();
     
     // Réinitialiser l'interface
     const googleButton = document.querySelector('.g_id_signin');
@@ -88,50 +114,42 @@ function handleLogout() {
     if (authLoggedIn) authLoggedIn.style.display = 'none';
     if (userEmail) userEmail.textContent = '';
     
-    hideApp();
+    // Masquer l'application
+    hideApplication();
+    
+    // Recharger la page pour réinitialiser Google Sign-In
     window.location.reload();
 }
 
 // Initialisation au chargement de la page
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', function() {
     console.log('Initialisation de l\'authentification...');
     
-    // Initialiser Google Sign-In
-    google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: handleCredentialResponse,
-        auto_select: false
-    });
+    // Vérifier si l'utilisateur était déjà connecté
+    const savedToken = sessionStorage.getItem('google_token');
+    const savedEmail = sessionStorage.getItem('user_email');
+    const savedUserId = sessionStorage.getItem('user_id');
     
-    // Vérifier si l'utilisateur est déjà connecté
-    const token = sessionStorage.getItem('google_token');
-    if (token) {
-        try {
-            currentUser = jwt_decode(token);
-            console.log('Session existante trouvée:', currentUser.email);
-            
-            // Mettre à jour l'interface
-            const userEmail = document.getElementById('user-email');
-            const authLoggedIn = document.getElementById('auth-logged-in');
-            const googleButton = document.querySelector('.g_id_signin');
-            
-            if (userEmail) userEmail.textContent = currentUser.email;
-            if (authLoggedIn) authLoggedIn.style.display = 'flex';
-            if (googleButton) googleButton.style.display = 'none';
-            
-            // Afficher l'application
-            showApp();
-        } catch (error) {
-            console.error('Token invalide:', error);
-            sessionStorage.removeItem('google_token');
-        }
+    if (savedToken && savedEmail && savedUserId) {
+        console.log('Session utilisateur trouvée:', savedEmail);
+        
+        // Recréer l'objet utilisateur
+        currentUser = {
+            email: savedEmail,
+            sub: savedUserId
+        };
+        
+        // Mettre à jour l'interface
+        updateUIAfterLogin();
+    } else {
+        console.log('Aucune session trouvée, affichage de l\'écran d\'accueil');
     }
     
-    // Ajouter l'écouteur pour le bouton de déconnexion
+    // Configurer le bouton de déconnexion
     const logoutButton = document.getElementById('logout-button');
     if (logoutButton) {
         logoutButton.addEventListener('click', handleLogout);
     }
     
-    console.log('Authentification initialisée');
+    console.log('Authentification initialisée avec succès');
 });
