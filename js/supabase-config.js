@@ -1,4 +1,6 @@
-const SUPABASE_URL = 'https://wfctdfyvxybynayzzjfv.supabase.co'
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndmY3RkZnl2eHlieW5heXpqamZ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0OTgyMzcsImV4cCI6MjA3MzA3NDIzN30.7Nfb0bSSis0-oUHvRXcPpKlnCbGiNOhVUexZ7K4IioY'
+const supabaseUrl = 'https://wfctdfyvxybynayzjjfv.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndmY3RkZnl2eHlieW5heXpqamZ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDczMjk0MDUsImV4cCI6MjAyMjkwNTQwNX0.JbAXEIxS1XtZVUOCSdCPt5hVukUWVoBuitEzOpv8D2U';
 
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+window.supabase = supabase; // Rendre supabase disponible globalement

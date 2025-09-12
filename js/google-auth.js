@@ -52,33 +52,23 @@ async function signInWithGoogle(token) {
     }
 }
 
-// Fonction de déconnexion
-async function handleLogout() {
-    try {
-        // Déconnexion de Supabase
-        await supabase.auth.signOut();
-        
-        // Supprime le token du stockage local
-        localStorage.removeItem('google_token');
-        
-        // Réinitialise l'interface
-        const googleButton = document.querySelector('.g_id_signin');
-        if (googleButton) googleButton.style.display = 'block';
-        
-        document.getElementById('auth-logged-in').style.display = 'none';
-        document.getElementById('user-email').textContent = '';
-        
-        // Affiche une notification de succès
-        showNotification('Déconnexion réussie', 'success');
-        
-        // Recharge la page après un court délai
-        setTimeout(() => {
-            window.location.reload();
-        }, 1000);
-    } catch (error) {
-        console.error('Erreur lors de la déconnexion:', error);
-        showNotification('Erreur lors de la déconnexion', 'error');
-    }
+// Fonction simplifiée de déconnexion
+function handleLogout() {
+    // Supprime le token
+    localStorage.removeItem('google_token');
+    
+    // Réinitialise l'interface
+    const googleButton = document.querySelector('.g_id_signin');
+    if (googleButton) googleButton.style.display = 'block';
+    
+    const loggedInSection = document.getElementById('auth-logged-in');
+    if (loggedInSection) loggedInSection.style.display = 'none';
+    
+    const userEmail = document.getElementById('user-email');
+    if (userEmail) userEmail.textContent = '';
+    
+    // Recharge la page
+    window.location.reload();
 }
 
 // Vérifie l'état de connexion au chargement
