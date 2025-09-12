@@ -10,92 +10,108 @@ const isAuthorizedOrigin = () => {
     return AUTHORIZED_ORIGINS.some(origin => window.location.origin.startsWith(origin));
 };
 
-function handleCredentialResponse(response) {
-    if (!isAuthorizedOrigin()) {
-        console.error('Origine non autorisée:', window.location.origin);
-        showNotification('Erreur : origine non autorisée', 'error');
-        return;
-    }
-    // Le jeton contient les informations de l'utilisateur
-    const credential = response.credential;
-    
-    // Décode le jeton pour obtenir les informations de l'utilisateur
-    const payload = JSON.parse(atob(credential.split('.')[1]));
-    
-    // Affiche l'email de l'utilisateur
-    document.getElementById('user-email').textContent = payload.email;
-    
-    // Cache le bouton de connexion et affiche la section connectée
-    const googleButton = document.querySelector('.g_id_signin');
-    if (googleButton) googleButton.style.display = 'none';
-    document.getElementById('auth-logged-in').style.display = 'flex';
-    
-    // Sauvegarde le jeton pour les futures requêtes
-    localStorage.setItem('google_token', credential);
-    
-    // Affiche une notification de succès
-    showNotification('Connexion réussie !', 'success');
-}
-
-async function signInWithGoogle(token) {
-    try {
-        const { data, error } = await supabase.auth.signInWithIdToken({
-            provider: 'google',
-            token: token
-        });
-        
-        if (error) throw error;
-        console.log('Connecté avec succès:', data);
-        
-    } catch (error) {
-        console.error('Erreur de connexion:', error.message);
-    }
-}
-
-// Fonction simplifiée de déconnexion
-function handleLogout() {
-    // Supprime le token
-    localStorage.removeItem('google_token');
-    
-    // Réinitialise l'interface
-    const googleButton = document.querySelector('.g_id_signin');
-    if (googleButton) googleButton.style.display = 'block';
-    
-    const loggedInSection = document.getElementById('auth-logged-in');
-    if (loggedInSection) loggedInSection.style.display = 'none';
-    
-    const userEmail = document.getElementById('user-email');
-    if (userEmail) userEmail.textContent = '';
-    
-    // Recharge la page
-    window.location.reload();
-}
-
-// Vérifie l'état de connexion au chargement
-document.addEventListener('DOMContentLoaded', async () => {
-    const logoutButton = document.getElementById('logout-button');
-    if (logoutButton) {
-        logoutButton.addEventListener('click', handleLogout);
+class GoogleAuth {
+    constructor() {
+        this.user = null;
+        this.initializeGoogleSignIn();
+        this.bindLogoutButton();
     }
 
-    // Vérifie si un token existe
-    const token = localStorage.getItem('google_token');
-    if (token) {
+    async initializeGoogleSignIn() {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                // L'utilisateur est connecté
-                const googleButton = document.querySelector('.g_id_signin');
-                if (googleButton) googleButton.style.display = 'none';
-                document.getElementById('auth-logged-in').style.display = 'flex';
-                document.getElementById('user-email').textContent = user.email;
-            } else {
-                // Token invalide
-                localStorage.removeItem('google_token');
-            }
+            // Initialiser l'API Google
+            await new Promise((resolve) => gapi.load('client:auth2', resolve));
+            await GoogleDriveStorage.initializeGoogleDrive();
+
+            google.accounts.id.initialize({
+                client_id: CLIENT_ID,
+                callback: this.handleCredentialResponse.bind(this)
+            });
+
+            google.accounts.id.renderButton(
+                document.querySelector('.g_id_signin'),
+                { theme: 'outline', size: 'large' }
+            );
+
+            // Vérifier la session existante
+            this.checkExistingSession();
         } catch (error) {
-            console.error('Erreur de vérification:', error);
-            localStorage.removeItem('google_token');
+            console.error('Erreur d\'initialisation:', error);
         }
     }
-});
+
+    async handleCredentialResponse(response) {
+        try {
+            this.user = jwt_decode(response.credential);
+            sessionStorage.setItem('google_token', response.credential);
+            
+            // Mettre à jour l'interface
+            this.updateUI(true);
+            
+            // Charger les cartes depuis Google Drive
+            const cards = await GoogleDriveStorage.loadCards();
+            if (window.renderCards) {
+                window.renderCards(cards);
+            }
+            
+        } catch (error) {
+            console.error('Erreur de connexion:', error);
+        }
+    }
+
+    async checkExistingSession() {
+        const token = sessionStorage.getItem('google_token');
+        if (token) {
+            try {
+                this.user = jwt_decode(token);
+                this.updateUI(true);
+                const cards = await GoogleDriveStorage.loadCards();
+                if (window.renderCards) {
+                    window.renderCards(cards);
+                }
+            } catch (error) {
+                console.error('Session invalide:', error);
+                this.logout();
+            }
+        }
+    }
+
+    async logout() {
+        try {
+            this.user = null;
+            sessionStorage.removeItem('google_token');
+            this.updateUI(false);
+            
+            // Recharger la page pour réinitialiser l'état
+            window.location.reload();
+        } catch (error) {
+            console.error('Erreur lors de la déconnexion:', error);
+        }
+    }
+
+    bindLogoutButton() {
+        const logoutButton = document.getElementById('logout-button');
+        if (logoutButton) {
+            logoutButton.addEventListener('click', () => this.logout());
+        }
+    }
+
+    updateUI(isSignedIn) {
+        const authLoggedIn = document.getElementById('auth-logged-in');
+        const googleButton = document.querySelector('.g_id_signin');
+        const userEmail = document.getElementById('user-email');
+
+        if (isSignedIn && this.user) {
+            authLoggedIn.style.display = 'flex';
+            googleButton.style.display = 'none';
+            userEmail.textContent = this.user.email;
+        } else {
+            authLoggedIn.style.display = 'none';
+            googleButton.style.display = 'block';
+            userEmail.textContent = '';
+        }
+    }
+}
+
+// Initialiser l'authentification
+const auth = new GoogleAuth();
