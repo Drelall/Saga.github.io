@@ -96,7 +96,7 @@ function showNotification(message, type = 'info') {
 }
 
 // Fonction pour gérer l'affichage de l'application
-function toggleAppVisibility(isLoggedIn) {
+export function toggleAppVisibility(isLoggedIn) {
     const appContent = document.querySelector('.container');
     const menubar = document.querySelector('.menubar');
     const welcomeScreen = document.getElementById('welcome-screen');

@@ -1,4 +1,5 @@
 import config from './config.js';
+import { toggleAppVisibility } from '../renderer.js';
 
 class GoogleAuth {
     constructor() {
