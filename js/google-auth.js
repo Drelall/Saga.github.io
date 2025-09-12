@@ -1,23 +1,25 @@
-// Configuration
-const GOOGLE_CONFIG = {
-    apiKey: 'AIzaSyDjci3kiYdN7e1Wuz3Y5H6Up9j9dZAAaS0',
-    clientId: '239325905492-tu5l9oblsjjq1s3gii35juauscc2qrph.apps.googleusercontent.com'
-};
+// Configuration Google
+const GOOGLE_CLIENT_ID = '239325905492-tu5l9oblsjjq1s3gii35juauscc2qrph.apps.googleusercontent.com';
 
 // Variable globale pour l'utilisateur
 let currentUser = null;
 
-// Fonction pour gérer la réponse d'authentification
+// Fonction appelée automatiquement par Google après connexion
 function handleCredentialResponse(response) {
     try {
+        // Décoder le token JWT
         currentUser = jwt_decode(response.credential);
+        
+        // Stocker le token
         sessionStorage.setItem('google_token', response.credential);
         
         console.log('Utilisateur connecté:', currentUser.email);
         
         // Masquer le bouton de connexion
         const googleButton = document.querySelector('.g_id_signin');
-        if (googleButton) googleButton.style.display = 'none';
+        if (googleButton) {
+            googleButton.style.display = 'none';
+        }
         
         // Afficher l'interface connectée
         const authLoggedIn = document.getElementById('auth-logged-in');
@@ -25,25 +27,40 @@ function handleCredentialResponse(response) {
         if (authLoggedIn) authLoggedIn.style.display = 'flex';
         if (userEmail) userEmail.textContent = currentUser.email;
         
-        // Afficher l'application et masquer l'écran d'accueil
+        // AFFICHER L'APPLICATION (c'est ça qui manquait !)
         showApp();
         
     } catch (error) {
         console.error('Erreur de connexion:', error);
+        alert('Erreur lors de la connexion');
     }
 }
 
 // Fonction pour afficher l'application
 function showApp() {
+    console.log('Affichage de l\'application...');
+    
     const appContent = document.querySelector('.container');
     const menubar = document.querySelector('.menubar');
     const welcomeScreen = document.getElementById('welcome-screen');
     
-    if (appContent) appContent.style.display = 'block';
-    if (menubar) menubar.style.display = 'flex';
-    if (welcomeScreen) welcomeScreen.style.display = 'none';
+    // Masquer l'écran d'accueil
+    if (welcomeScreen) {
+        welcomeScreen.style.display = 'none';
+        console.log('Écran d\'accueil masqué');
+    }
     
-    console.log('Application affichée');
+    // Afficher l'application
+    if (appContent) {
+        appContent.style.display = 'block';
+        console.log('Application affichée');
+    }
+    
+    // Afficher la barre de menu
+    if (menubar) {
+        menubar.style.display = 'flex';
+        console.log('Menu affiché');
+    }
 }
 
 // Fonction pour masquer l'application
@@ -75,13 +92,25 @@ function handleLogout() {
     window.location.reload();
 }
 
-// Initialisation
+// Initialisation au chargement de la page
 document.addEventListener('DOMContentLoaded', () => {
-    // Vérifier la session existante
+    console.log('Initialisation de l\'authentification...');
+    
+    // Initialiser Google Sign-In
+    google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleCredentialResponse,
+        auto_select: false
+    });
+    
+    // Vérifier si l'utilisateur est déjà connecté
     const token = sessionStorage.getItem('google_token');
     if (token) {
         try {
             currentUser = jwt_decode(token);
+            console.log('Session existante trouvée:', currentUser.email);
+            
+            // Mettre à jour l'interface
             const userEmail = document.getElementById('user-email');
             const authLoggedIn = document.getElementById('auth-logged-in');
             const googleButton = document.querySelector('.g_id_signin');
@@ -90,6 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (authLoggedIn) authLoggedIn.style.display = 'flex';
             if (googleButton) googleButton.style.display = 'none';
             
+            // Afficher l'application
             showApp();
         } catch (error) {
             console.error('Token invalide:', error);
@@ -102,4 +132,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (logoutButton) {
         logoutButton.addEventListener('click', handleLogout);
     }
+    
+    console.log('Authentification initialisée');
 });

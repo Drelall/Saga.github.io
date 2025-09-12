@@ -1,55 +1,62 @@
 import GoogleDriveStorage from './google-drive-storage.js';
 import config from './config.js';
 
-// Gestionnaire de soumission du formulaire
-document.getElementById('rpForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
+// Attendre que la page soit chargée
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('Renderer initialisé');
     
-    if (!auth.user) {
-        showNotification('Veuillez vous connecter pour ajouter un RP', 'error');
-        return;
-    }
+    // Gestionnaire de soumission du formulaire (sera activé après connexion)
+    const rpForm = document.getElementById('rpForm');
+    if (rpForm) {
+        rpForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!currentUser) {
+                alert('Veuillez vous connecter pour ajouter un RP');
+                return;
+            }
 
-    const formData = {
-        title: document.getElementById('rpName').value,
-        partner: document.getElementById('partnerName').value,
-        location: document.getElementById('rpLocation').value,
-        type: document.getElementById('rpType').value,
-        universe: document.getElementById('rpUniverse').value,
-        url: document.getElementById('rpUrl').value,
-        status: document.getElementById('turn').value,
-        created_at: new Date().toISOString()
-    };
+            const formData = {
+                id: Date.now().toString(),
+                title: document.getElementById('rpName').value,
+                partner: document.getElementById('partnerName').value,
+                location: document.getElementById('rpLocation').value,
+                type: document.getElementById('rpType').value,
+                universe: document.getElementById('rpUniverse').value,
+                url: document.getElementById('rpUrl').value,
+                status: document.getElementById('turn').value,
+                created_at: new Date().toISOString()
+            };
 
-    try {
-        // Charger les cartes existantes
-        let cards = await GoogleDriveStorage.loadCards();
-        
-        // Ajouter la nouvelle carte
-        cards.push(formData);
-        
-        // Sauvegarder dans Google Drive
-        await GoogleDriveStorage.saveCards(cards);
-        
-        // Réinitialiser le formulaire
-        e.target.reset();
-        
-        // Rafraîchir l'affichage
-        renderCards(cards);
-        
-        showNotification('RP ajouté avec succès !', 'success');
-    } catch (error) {
-        console.error('Erreur lors de l\'ajout:', error);
-        showNotification('Erreur lors de l\'ajout du RP', 'error');
+            try {
+                // Pour l'instant, utiliser le localStorage jusqu'à ce que Google Drive soit configuré
+                let cards = JSON.parse(localStorage.getItem(`rp_cards_${currentUser.sub}`) || '[]');
+                cards.push(formData);
+                localStorage.setItem(`rp_cards_${currentUser.sub}`, JSON.stringify(cards));
+                
+                // Réinitialiser le formulaire
+                e.target.reset();
+                
+                // Rafraîchir l'affichage
+                renderCards(cards);
+                
+                alert('RP ajouté avec succès !');
+            } catch (error) {
+                console.error('Erreur lors de l\'ajout:', error);
+                alert('Erreur lors de l\'ajout du RP');
+            }
+        });
     }
 });
 
 // Fonction pour afficher les cartes
-async function renderCards(cards) {
+function renderCards(cards) {
     const activeCardsContainer = document.getElementById('cards-view');
     const archiveCardsContainer = document.getElementById('cards-view-archive');
     const emptyStateActive = document.getElementById('cards-empty-state');
     const emptyStateArchive = document.getElementById('cards-empty-state-archive');
+    
+    if (!activeCardsContainer) return;
     
     // Séparer les cartes actives et archivées
     const activeCards = cards.filter(card => !['RP terminé', 'RP abandonné'].includes(card.status));
@@ -57,11 +64,13 @@ async function renderCards(cards) {
     
     // Afficher les cartes actives
     activeCardsContainer.innerHTML = activeCards.map(card => createCardHTML(card)).join('');
-    emptyStateActive.style.display = activeCards.length === 0 ? 'block' : 'none';
+    if (emptyStateActive) emptyStateActive.style.display = activeCards.length === 0 ? 'block' : 'none';
     
     // Afficher les cartes archivées
-    archiveCardsContainer.innerHTML = archivedCards.map(card => createCardHTML(card)).join('');
-    emptyStateArchive.style.display = archivedCards.length === 0 ? 'block' : 'none';
+    if (archiveCardsContainer) {
+        archiveCardsContainer.innerHTML = archivedCards.map(card => createCardHTML(card)).join('');
+    }
+    if (emptyStateArchive) emptyStateArchive.style.display = archivedCards.length === 0 ? 'block' : 'none';
 }
 
 // Fonction pour créer le HTML d'une carte
