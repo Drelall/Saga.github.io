@@ -15,8 +15,9 @@
   <link rel="apple-touch-icon" href="assets/icons/plume-192.png">
   <link rel="stylesheet" href="style.css">
   <link rel="icon" type="image/png" href="assets/icons/plume.png">
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="https://apis.google.com/js/platform.js" async defer></script>
   <script src="https://apis.google.com/js/api.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async></script>
   <script src="https://unpkg.com/jwt-decode/build/jwt-decode.js"></script>
 </head>
 <body>
@@ -27,16 +28,15 @@
     <div class="auth-section">
       <div id="g_id_onload"
            data-client_id="239325905492-j5a5skfekv9io2u77tj41aaki4nmc33o.apps.googleusercontent.com"
-           data-context="signup"
-           data-ux_mode="popup"
-           data-callback="handleCredentialResponse">
+           data-auto_prompt="false">
       </div>
       <div class="g_id_signin"
            data-type="standard"
-           data-shape="rectangular"
+           data-size="large"
            data-theme="outline"
-           data-text="signup_with"
-           data-size="large">
+           data-text="sign_in_with"
+           data-shape="rectangular"
+           data-logo_alignment="left">
       </div>
       <div id="auth-logged-in" style="display: none;">
         <span id="user-email"></span>
