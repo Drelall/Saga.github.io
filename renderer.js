@@ -1,3 +1,8 @@
+import GoogleDriveStorage from './js/google-drive-storage.js';
+
+// Instance du gestionnaire Google Drive
+const driveStorage = new GoogleDriveStorage();
+
 const rpForm = document.getElementById('rpForm');
 const notificationsContainer = document.getElementById('notifications');
 
@@ -971,7 +976,7 @@ document.addEventListener('DOMContentLoaded', function() {
   setupAutocomplete('rpUniverse', 'universeSuggestions', 'universes');
   
   // Gestionnaire de soumission du formulaire
-  rpForm.addEventListener('submit', function(e) {
+  rpForm.addEventListener('submit', async function(e) {
     e.preventDefault();
 
     const rpName = document.getElementById('rpName').value.trim();
@@ -1180,7 +1185,7 @@ function updateTimeDisplays() {
     const archivedRPs = getArchivedRPs();
     let filteredList = archivedRPs;
     if (currentFilterArchive !== 'all') {
-      filteredList = archivedRPs.filter(item => item.turn === currentFilterArchive);
+      filteredList = archivedRPs.filter item => item.turn === currentFilterArchive);
     }
     filteredList = sortRPs(filteredList, currentSortArchive);
     
@@ -1392,3 +1397,86 @@ document.getElementById('quitter-app').addEventListener('click', (e) => {
 
 // Événement pour l'input file
 importFileInput.addEventListener('change', importData);
+
+// Attendre que la page soit complètement chargée
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Renderer chargé');
+    
+    // Gestionnaire du formulaire d'ajout de RP
+    const rpForm = document.getElementById('rpForm');
+    if (rpForm) {
+        rpForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Vérifier si l'utilisateur est connecté
+            if (!currentUser || !sessionStorage.getItem('user_id')) {
+                alert('Veuillez vous connecter pour ajouter un RP');
+                return;
+            }
+            
+            console.log('Ajout d\'un nouveau RP...');
+            
+            // Récupérer les données du formulaire
+            const formData = {
+                id: Date.now().toString(),
+                title: document.getElementById('rpName').value,
+                partner: document.getElementById('partnerName').value,
+                location: document.getElementById('rpLocation').value || 'Non spécifié',
+                type: document.getElementById('rpType').value || 'Non spécifié',
+                universe: document.getElementById('rpUniverse').value || 'Non spécifié',
+                url: document.getElementById('rpUrl').value,
+                status: document.getElementById('turn').value,
+                created_at: new Date().toISOString()
+            };
+            
+            try {
+                // Charger les cartes existantes depuis Google Drive
+                let cards = await driveStorage.loadData();
+                
+                // Ajouter la nouvelle carte
+                cards.push(formData);
+                
+                // Sauvegarder sur Google Drive
+                await driveStorage.saveData(cards);
+                
+                console.log('RP ajouté avec succès:', formData.title);
+                
+                // Réinitialiser le formulaire
+                rpForm.reset();
+                
+                // Rafraîchir l'affichage
+                renderCards(cards);
+                
+                // Notification de succès
+                showNotification('RP ajouté avec succès !', 'success');
+                
+            } catch (error) {
+                console.error('Erreur lors de l\'ajout du RP:', error);
+                showNotification('Erreur lors de l\'ajout du RP', 'error');
+            }
+        });
+    }
+    
+    // Charger les RPs existants si l'utilisateur est connecté
+    if (sessionStorage.getItem('user_id')) {
+        loadExistingRPs();
+    }
+});
+
+// Fonction pour charger les RPs existants
+async function loadExistingRPs() {
+    const userId = sessionStorage.getItem('user_id');
+    if (!userId) return;
+    
+    try {
+        const cards = await driveStorage.loadData();
+        
+        if (cards.length > 0) {
+            console.log(`${cards.length} RPs chargés depuis Google Drive`);
+            renderCards(cards);
+        }
+    } catch (error) {
+        console.error('Erreur chargement RPs:', error);
+        showNotification('Erreur lors du chargement des RPs', 'error');
+    }
+}

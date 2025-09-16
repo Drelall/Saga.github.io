@@ -1,8 +1,10 @@
 // Configuration Google
 const GOOGLE_CLIENT_ID = '239325905492-tu5l9oblsjjq1s3gii35juauscc2qrph.apps.googleusercontent.com';
+const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/drive.appdata';
 
 // Variables globales
 let currentUser = null;
+let gapi;
 
 // Fonction appelée par Google après connexion réussie
 window.handleCredentialResponse = function(response) {
@@ -20,14 +22,50 @@ window.handleCredentialResponse = function(response) {
         sessionStorage.setItem('user_email', currentUser.email);
         sessionStorage.setItem('user_id', currentUser.sub);
         
-        // Mettre à jour l'interface
-        updateUIAfterLogin();
+        // Initialiser l'API Google pour Drive
+        initGoogleAPI().then(() => {
+            // Mettre à jour l'interface
+            updateUIAfterLogin();
+        }).catch(error => {
+            console.error('Erreur initialisation API Google:', error);
+            alert('Erreur lors de l\'initialisation de Google Drive');
+        });
         
     } catch (error) {
         console.error('Erreur lors du traitement de la connexion:', error);
         alert('Erreur lors de la connexion');
     }
 };
+
+// Initialiser l'API Google pour accéder à Drive
+async function initGoogleAPI() {
+    try {
+        await new Promise((resolve, reject) => {
+            window.gapi.load('auth2:client', {
+                callback: resolve,
+                onerror: reject
+            });
+        });
+
+        await gapi.client.init({
+            clientId: GOOGLE_CLIENT_ID,
+            scope: GOOGLE_SCOPES,
+            discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
+        });
+
+        // Obtenir l'autorisation pour Google Drive
+        const authInstance = gapi.auth2.getAuthInstance();
+        if (!authInstance.isSignedIn.get()) {
+            await authInstance.signIn();
+        }
+
+        console.log('API Google Drive initialisée avec succès');
+        window.gapi = gapi; // Rendre gapi accessible globalement
+    } catch (error) {
+        console.error('Erreur initialisation API Google:', error);
+        throw error;
+    }
+}
 
 // Fonction pour mettre à jour l'interface après connexion
 function updateUIAfterLogin() {
