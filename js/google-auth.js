@@ -42,16 +42,10 @@ function updateUIAfterLogin() {
     
     // Afficher les infos utilisateur connecté
     const authLoggedIn = document.getElementById('auth-logged-in');
-    const userEmail = document.getElementById('user-email');
     
     if (authLoggedIn) {
         authLoggedIn.style.display = 'flex';
         console.log('Section utilisateur connecté affichée');
-    }
-    
-    if (userEmail && currentUser) {
-        userEmail.textContent = currentUser.email;
-        console.log('Email utilisateur affiché');
     }
     
     // AFFICHER L'APPLICATION - C'est le plus important !
@@ -108,11 +102,9 @@ function handleLogout() {
     // Réinitialiser l'interface
     const googleButton = document.querySelector('.g_id_signin');
     const authLoggedIn = document.getElementById('auth-logged-in');
-    const userEmail = document.getElementById('user-email');
     
     if (googleButton) googleButton.style.display = 'block';
     if (authLoggedIn) authLoggedIn.style.display = 'none';
-    if (userEmail) userEmail.textContent = '';
     
     // Masquer l'application
     hideApplication();
