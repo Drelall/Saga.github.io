@@ -1185,7 +1185,7 @@ function updateTimeDisplays() {
     const archivedRPs = getArchivedRPs();
     let filteredList = archivedRPs;
     if (currentFilterArchive !== 'all') {
-      filteredList = archivedRPs.filter item => item.turn === currentFilterArchive);
+      filteredList = archivedRPs.filter(item => item.turn === currentFilterArchive);
     }
     filteredList = sortRPs(filteredList, currentSortArchive);
     
