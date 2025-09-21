@@ -28,6 +28,11 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
+  const url = new URL(e.request.url);
+  if (url.origin === 'https://www.googleapis.com') {
+    return; // ne pas intercepter Drive
+  }
+
   const req = e.request;
 
   // Stratégie network-first pour HTML

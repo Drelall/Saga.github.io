@@ -1,17 +1,27 @@
-import GoogleDriveStorage from './google-drive-storage.js';
+import driveStorage from './google-drive-storage.js';
 
-const storage = new GoogleDriveStorage();
 let rpList = [];
 
 console.log('📦 Renderer SIMPLE chargé');
 
 // Fonctions basiques
-async function saveData() {
-    await storage.saveData(rpList);
+async function saveToDrive() {
+    try {
+        await driveStorage.saveData(rpList);
+    } catch (e) {
+        console.error('Erreur sauvegarde Drive:', e.message);
+    }
 }
 
-async function loadData() {
-    rpList = await storage.loadData();
+async function loadFromDriveAndRender() {
+    try {
+        rpList = await driveStorage.loadData();
+        console.log('📥 Chargé depuis Drive:', rpList.length);
+        updateActiveCards?.(); // si fonctions déjà définies
+        updateArchiveCards?.();
+    } catch (e) {
+        console.error('Erreur chargement Drive:', e.message);
+    }
 }
 
 function showNotification(message, type = 'success') {
@@ -76,57 +86,49 @@ function updateCards() {
 window.deleteRP = async function(id) {
     if (confirm('Supprimer ce RP ?')) {
         rpList = rpList.filter(rp => rp.id != id);
-        await saveData();
+        await saveToDrive();
         updateCards();
         showNotification('RP supprimé');
     }
 }
 
 // Initialisation
-document.addEventListener('DOMContentLoaded', async function() {
+document.addEventListener('DOMContentLoaded', () => {
     console.log('🚀 Init renderer...');
     
-    const rpForm = document.getElementById('rpForm');
-    if (rpForm) {
-        rpForm.addEventListener('submit', async function(e) {
+    const form = document.getElementById('rpForm');
+    if (form) {
+        form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
             if (!window.currentUser) {
-                alert('Connectez-vous d\'abord');
+                alert('Connectez-vous');
                 return;
             }
+            const rpName = document.getElementById('rpName').value.trim();
+            const partnerName = document.getElementById('partnerName').value.trim();
+            const turn = document.getElementById('turn').value;
+            if (!rpName || !partnerName || !turn) return;
 
             const newRP = {
-                id: Date.now(),
-                rp: document.getElementById('rpName').value,
-                partner: document.getElementById('partnerName').value,
-                location: document.getElementById('rpLocation').value,
-                type: document.getElementById('rpType').value,
-                universe: document.getElementById('rpUniverse').value,
-                url: document.getElementById('rpUrl').value,
-                turn: document.getElementById('turn').value,
-                date: new Date()
+                id: Date.now() + '_' + Math.random().toString(36).slice(2),
+                rp: rpName,
+                partner: partnerName,
+                location: document.getElementById('rpLocation').value.trim(),
+                type: document.getElementById('rpType').value.trim(),
+                universe: document.getElementById('rpUniverse').value.trim(),
+                url: document.getElementById('rpUrl').value.trim(),
+                turn,
+                date: new Date().toISOString()
             };
-
             rpList.push(newRP);
-            
-            // Sauvegarder avec indication
-            showNotification('Sauvegarde en cours...', 'info');
-            await saveData();
-            updateCards();
-            rpForm.reset();
-            showNotification('RP ajouté et synchronisé !');
+            await saveToDrive();
+            updateActiveCards?.();
+            form.reset();
         });
     }
-    
-    // Charger données avec indication
-    showNotification('Chargement des données...', 'info');
-    await loadData();
-    updateCards();
-    
-    if (rpList.length > 0) {
-        showNotification(`${rpList.length} RPs chargés`);
-    }
-    
-    console.log('✅ Ready');
+
+    // Charger quand le jeton Drive est prêt
+    document.addEventListener('drive-ready', () => {
+        loadFromDriveAndRender();
+    });
 });

@@ -1,5 +1,8 @@
 // Configuration Google
 const GOOGLE_CLIENT_ID = '239325905492-tu5l9oblsjjq1s3gii35juauscc2qrph.apps.googleusercontent.com';
+const DRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/drive.file';
+let driveAccessToken = null;
+let tokenClient = null;
 
 // Variables globales
 let currentUser = null;
@@ -7,7 +10,7 @@ window.currentUser = null;
 
 // Fonction GSI simple qui marche
 window.handleCredentialResponse = function(response) {
-    console.log('🔐 Connexion Google reçue');
+    console.log('🔐 Connexion Google réussie !');
     try {
         if (!response || !response.credential) {
             console.error('⚠️ Réponse GSI invalide');
@@ -26,7 +29,8 @@ window.handleCredentialResponse = function(response) {
         sessionStorage.setItem('user_id', currentUser.sub);
         sessionStorage.setItem('user_name', currentUser.name || currentUser.email);
         updateUIAfterLogin();
-        runHealthCheck({ afterLogin:true });
+        // Demander les scopes Drive
+        requestDriveAccess();
     } catch (error) {
         console.error('❌ Erreur connexion:', error);
         alert('Erreur lors de la connexion');
@@ -108,6 +112,30 @@ function handleLogout() {
     window.location.reload();
 }
 
+// Initialiser le client de jeton OAuth (Drive)
+function initTokenClient() {
+    if (tokenClient) return;
+    tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: GOOGLE_CLIENT_ID,
+        scope: DRIVE_SCOPES,
+        prompt: '',
+        callback: (tokenResponse) => {
+            if (tokenResponse && tokenResponse.access_token) {
+                driveAccessToken = tokenResponse.access_token;
+                sessionStorage.setItem('drive_access_token', driveAccessToken);
+                console.log('✅ Jeton Drive obtenu');
+                document.dispatchEvent(new CustomEvent('drive-ready'));
+            }
+        }
+    });
+}
+
+// Demander le jeton Drive (silencieux si possible)
+function requestDriveAccess() {
+    initTokenClient();
+    tokenClient.requestAccessToken({ prompt: driveAccessToken ? '' : 'consent' });
+}
+
 // Auto-diagnostic basique
 function runHealthCheck(context = {}) {
     const result = {
@@ -141,7 +169,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const savedEmail = sessionStorage.getItem('user_email');
     const savedUserId = sessionStorage.getItem('user_id');
-
     if (savedEmail && savedUserId) {
         console.log('🔍 Session trouvée:', savedEmail);
         currentUser = {
@@ -151,7 +178,14 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         window.currentUser = currentUser;
         updateUIAfterLogin();
-        runHealthCheck({ restoredSession:true });
+        const savedToken = sessionStorage.getItem('drive_access_token');
+        if (savedToken) {
+            driveAccessToken = savedToken;
+            console.log('♻️ Jeton Drive restauré');
+            document.dispatchEvent(new CustomEvent('drive-ready'));
+        } else {
+            requestDriveAccess();
+        }
     } else {
         runHealthCheck({ noSession:true });
     }
@@ -163,3 +197,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     console.log('✅ Prêt');
 });
+
+// Exposer pour le module Drive
+export function getDriveAccessToken() {
+    return driveAccessToken;
+}
