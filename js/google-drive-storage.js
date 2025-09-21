@@ -4,53 +4,85 @@ class GoogleDriveStorage {
     constructor() {
         this.fileName = 'rp-tracker-data.json';
         this.fileId = null;
-        this.folderId = null;
+        this.isDriveAvailable = false;
         console.log('📦 Google Drive Storage initialisé');
     }
 
-    // Vérifier les permissions et l'authentification
-    async checkAuth() {
-        if (!window.gapi || !gapi.client) {
-            throw new Error('Google API non initialisée');
-        }
-        
-        if (!window.currentUser) {
-            throw new Error('Utilisateur non connecté');
-        }
-        
-        const authInstance = gapi.auth2.getAuthInstance();
-        if (!authInstance.isSignedIn.get()) {
-            throw new Error('Utilisateur non authentifié sur Google Drive');
-        }
-        
-        return true;
-    }
-
-    // Trouver le fichier de données dans appDataFolder (plus simple)
-    async findDataFile() {
+    // Vérifier si Google Drive est disponible (sans faire échouer l'app)
+    async checkDriveAvailability() {
         try {
-            const response = await gapi.client.drive.files.list({
-                q: `name='${this.fileName}' and trashed=false`,
-                spaces: 'appDataFolder'
-            });
-            
-            if (response.result.files && response.result.files.length > 0) {
-                this.fileId = response.result.files[0].id;
-                console.log('📄 Fichier données trouvé:', this.fileId);
-            } else {
-                console.log('📄 Aucun fichier données trouvé');
+            if (!window.gapi || !gapi.client) {
+                console.warn('⚠️ Google API non disponible');
+                return false;
             }
             
-            return this.fileId;
+            if (!window.currentUser) {
+                console.warn('⚠️ Utilisateur non connecté');
+                return false;
+            }
+            
+            // Test simple pour voir si Drive API fonctionne
+            await gapi.client.drive.about.get();
+            this.isDriveAvailable = true;
+            console.log('✅ Google Drive disponible');
+            return true;
         } catch (error) {
-            console.error('❌ Erreur recherche fichier:', error);
-            throw error;
+            console.warn('⚠️ Google Drive non disponible:', error.message);
+            this.isDriveAvailable = false;
+            return false;
         }
     }
 
-    // Sauvegarder sur Google Drive (méthode simplifiée qui fonctionne)
+    // Sauvegarder (avec fallback localStorage si Drive indisponible)
     async saveData(data) {
-        await this.checkAuth();
+        const userId = sessionStorage.getItem('user_id') || 'anonymous';
+        
+        // Essayer Google Drive d'abord
+        if (await this.checkDriveAvailability()) {
+            try {
+                await this.saveToDrive(data);
+                console.log('✅ Sauvegarde Google Drive réussie');
+                return;
+            } catch (error) {
+                console.warn('⚠️ Échec sauvegarde Drive, fallback localStorage:', error.message);
+            }
+        }
+        
+        // Fallback vers localStorage
+        localStorage.setItem(`rp_data_${userId}`, JSON.stringify(data));
+        console.log('✅ Sauvegarde localStorage (fallback)');
+    }
+
+    // Charger (avec fallback localStorage si Drive indisponible)
+    async loadData() {
+        const userId = sessionStorage.getItem('user_id') || 'anonymous';
+        
+        // Essayer Google Drive d'abord
+        if (await this.checkDriveAvailability()) {
+            try {
+                const data = await this.loadFromDrive();
+                if (data && data.length > 0) {
+                    console.log('✅ Chargement Google Drive réussi:', data.length, 'RPs');
+                    return data;
+                }
+            } catch (error) {
+                console.warn('⚠️ Échec chargement Drive, fallback localStorage:', error.message);
+            }
+        }
+        
+        // Fallback vers localStorage
+        const localData = localStorage.getItem(`rp_data_${userId}`);
+        if (localData) {
+            const parsed = JSON.parse(localData);
+            console.log('✅ Chargement localStorage (fallback):', parsed.length, 'RPs');
+            return Array.isArray(parsed) ? parsed : [];
+        }
+        
+        return [];
+    }
+
+    // Méthodes Google Drive (appelées seulement si Drive disponible)
+    async saveToDrive(data) {
         await this.findDataFile();
         
         const content = JSON.stringify(data, null, 2);
@@ -58,113 +90,89 @@ class GoogleDriveStorage {
         const delimiter = "\r\n--" + boundary + "\r\n";
         const close_delim = "\r\n--" + boundary + "--";
 
-        try {
-            if (this.fileId) {
-                // Mettre à jour le fichier existant
-                const multipartRequestBody =
-                    delimiter +
-                    'Content-Type: application/json\r\n\r\n' +
-                    JSON.stringify({name: this.fileName}) +
-                    delimiter +
-                    'Content-Type: application/json\r\n\r\n' +
-                    content +
-                    close_delim;
+        if (this.fileId) {
+            // Mettre à jour
+            const multipartRequestBody =
+                delimiter +
+                'Content-Type: application/json\r\n\r\n' +
+                JSON.stringify({name: this.fileName}) +
+                delimiter +
+                'Content-Type: application/json\r\n\r\n' +
+                content +
+                close_delim;
 
-                const response = await gapi.client.request({
-                    path: `https://www.googleapis.com/upload/drive/v3/files/${this.fileId}`,
-                    method: 'PATCH',
-                    params: {uploadType: 'multipart'},
-                    headers: {
-                        'Content-Type': 'multipart/related; boundary="' + boundary + '"'
-                    },
-                    body: multipartRequestBody
-                });
-                
-                console.log('✅ Fichier mis à jour sur Google Drive');
-                return response;
-            } else {
-                // Créer un nouveau fichier dans appDataFolder
-                const metadata = {
-                    name: this.fileName,
-                    parents: ['appDataFolder']
-                };
+            await gapi.client.request({
+                path: `https://www.googleapis.com/upload/drive/v3/files/${this.fileId}`,
+                method: 'PATCH',
+                params: {uploadType: 'multipart'},
+                headers: {
+                    'Content-Type': 'multipart/related; boundary="' + boundary + '"'
+                },
+                body: multipartRequestBody
+            });
+        } else {
+            // Créer nouveau
+            const metadata = {
+                name: this.fileName,
+                parents: ['appDataFolder']
+            };
 
-                const multipartRequestBody =
-                    delimiter +
-                    'Content-Type: application/json\r\n\r\n' +
-                    JSON.stringify(metadata) +
-                    delimiter +
-                    'Content-Type: application/json\r\n\r\n' +
-                    content +
-                    close_delim;
+            const multipartRequestBody =
+                delimiter +
+                'Content-Type: application/json\r\n\r\n' +
+                JSON.stringify(metadata) +
+                delimiter +
+                'Content-Type: application/json\r\n\r\n' +
+                content +
+                close_delim;
 
-                const response = await gapi.client.request({
-                    path: 'https://www.googleapis.com/upload/drive/v3/files',
-                    method: 'POST',
-                    params: {uploadType: 'multipart'},
-                    headers: {
-                        'Content-Type': 'multipart/related; boundary="' + boundary + '"'
-                    },
-                    body: multipartRequestBody
-                });
-                
-                if (response.result && response.result.id) {
-                    this.fileId = response.result.id;
-                    console.log('✅ Nouveau fichier créé sur Google Drive:', this.fileId);
-                }
-                return response;
+            const response = await gapi.client.request({
+                path: 'https://www.googleapis.com/upload/drive/v3/files',
+                method: 'POST',
+                params: {uploadType: 'multipart'},
+                headers: {
+                    'Content-Type': 'multipart/related; boundary="' + boundary + '"'
+                },
+                body: multipartRequestBody
+            });
+            
+            if (response.result && response.result.id) {
+                this.fileId = response.result.id;
             }
-        } catch (error) {
-            console.error('❌ Erreur sauvegarde Google Drive:', error);
-            throw error;
         }
     }
 
-    // Charger depuis Google Drive
-    async loadData() {
-        await this.checkAuth();
+    async loadFromDrive() {
         await this.findDataFile();
         
         if (!this.fileId) {
-            console.log('📄 Aucun fichier, retour tableau vide');
             return [];
         }
         
-        try {
-            const response = await gapi.client.drive.files.get({
-                fileId: this.fileId,
-                alt: 'media'
-            });
-            
-            if (response.body) {
-                const data = JSON.parse(response.body);
-                console.log('✅ Données chargées depuis Google Drive:', data.length, 'RPs');
-                return Array.isArray(data) ? data : [];
-            }
-            
-            return [];
-        } catch (error) {
-            console.error('❌ Erreur chargement Google Drive:', error);
-            return [];
+        const response = await gapi.client.drive.files.get({
+            fileId: this.fileId,
+            alt: 'media'
+        });
+        
+        if (response.body) {
+            const data = JSON.parse(response.body);
+            return Array.isArray(data) ? data : [];
         }
+        
+        return [];
     }
 
-    // Supprimer toutes les données
-    async deleteData() {
-        await this.checkAuth();
+    async findDataFile() {
+        const response = await gapi.client.drive.files.list({
+            q: `name='${this.fileName}' and trashed=false`,
+            spaces: 'appDataFolder'
+        });
         
-        if (this.fileId) {
-            try {
-                await gapi.client.drive.files.delete({
-                    fileId: this.fileId
-                });
-                this.fileId = null;
-                console.log('✅ Données supprimées de Google Drive');
-            } catch (error) {
-                console.error('❌ Erreur suppression:', error);
-                throw error;
-            }
+        if (response.result.files && response.result.files.length > 0) {
+            this.fileId = response.result.files[0].id;
         }
+        
+        return this.fileId;
     }
 }
 

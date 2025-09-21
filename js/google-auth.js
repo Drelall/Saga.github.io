@@ -4,75 +4,71 @@ const GOOGLE_CLIENT_ID = '239325905492-tu5l9oblsjjq1s3gii35juauscc2qrph.apps.goo
 // Variables globales
 let currentUser = null;
 window.currentUser = null;
-let authInstance = null;
 
-// Initialiser Google API avec OAuth2 (méthode utilisée par de nombreux développeurs)
-async function initGoogleAPI() {
+// Fonction GSI (Google Sign-In) - Version simplifiée qui fonctionne
+window.handleCredentialResponse = function(response) {
+    console.log('🔐 Connexion Google réussie !');
+    
     try {
-        console.log('🔧 Initialisation Google API...');
+        // Décoder le token JWT
+        const payload = JSON.parse(atob(response.credential.split('.')[1]));
+        currentUser = payload;
+        window.currentUser = currentUser;
         
-        // Charger gapi
-        await new Promise((resolve) => {
-            gapi.load('auth2:client', resolve);
+        console.log('👤 Utilisateur connecté:', currentUser.email);
+        
+        // Stocker les informations
+        sessionStorage.setItem('user_email', currentUser.email);
+        sessionStorage.setItem('user_id', currentUser.sub);
+        sessionStorage.setItem('user_name', currentUser.name || currentUser.email);
+        
+        // Initialiser Google Drive en arrière-plan (sans bloquer l'UI)
+        initGoogleDriveAsync();
+        
+        // Afficher l'application immédiatement
+        updateUIAfterLogin();
+        
+    } catch (error) {
+        console.error('❌ Erreur traitement connexion:', error);
+        alert('Erreur lors de la connexion');
+    }
+};
+
+// Initialiser Google Drive en arrière-plan (non bloquant)
+async function initGoogleDriveAsync() {
+    try {
+        console.log('🔧 Initialisation Google Drive en arrière-plan...');
+        
+        // Attendre que gapi soit disponible
+        if (!window.gapi) {
+            console.warn('⚠️ GAPI non disponible, Drive sera désactivé temporairement');
+            return;
+        }
+        
+        // Charger les modules nécessaires
+        await new Promise((resolve, reject) => {
+            gapi.load('client:auth2', {
+                callback: resolve,
+                onerror: () => {
+                    console.warn('⚠️ Erreur chargement GAPI modules');
+                    resolve(); // Continuer même si ça échoue
+                }
+            });
         });
 
-        // Initialiser le client avec TOUS les scopes nécessaires
+        // Initialiser le client avec les permissions Drive
         await gapi.client.init({
             clientId: GOOGLE_CLIENT_ID,
-            scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.appdata',
+            scope: 'https://www.googleapis.com/auth/drive.appdata',
             discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
         });
 
-        authInstance = gapi.auth2.getAuthInstance();
-        console.log('✅ Google API initialisée');
-
-        // Vérifier si déjà connecté
-        if (authInstance.isSignedIn.get()) {
-            const user = authInstance.currentUser.get();
-            handleSignIn(user);
-        } else {
-            console.log('ℹ️ Utilisateur non connecté');
-        }
+        console.log('✅ Google Drive API initialisée en arrière-plan');
+        window.gapi = gapi;
         
-        return true;
     } catch (error) {
-        console.error('❌ Erreur initialisation Google API:', error);
-        throw error;
-    }
-}
-
-// Gérer la connexion
-function handleSignIn(googleUser) {
-    const profile = googleUser.getBasicProfile();
-    
-    currentUser = {
-        email: profile.getEmail(),
-        name: profile.getName(),
-        sub: profile.getId(),
-        picture: profile.getImageUrl()
-    };
-    
-    window.currentUser = currentUser;
-    
-    console.log('👤 Utilisateur connecté:', currentUser.email);
-    
-    // Stocker les informations
-    sessionStorage.setItem('user_email', currentUser.email);
-    sessionStorage.setItem('user_id', currentUser.sub);
-    sessionStorage.setItem('user_name', currentUser.name);
-    
-    updateUIAfterLogin();
-}
-
-// Fonction de connexion manuelle
-async function signIn() {
-    try {
-        console.log('🔐 Tentative de connexion...');
-        const user = await authInstance.signIn();
-        handleSignIn(user);
-    } catch (error) {
-        console.error('❌ Erreur connexion:', error);
-        alert('Erreur lors de la connexion');
+        console.warn('⚠️ Google Drive non disponible, utilisation en mode dégradé:', error);
+        // L'application continue de fonctionner sans Drive
     }
 }
 
@@ -132,82 +128,58 @@ function hideApplication() {
     if (menubar) menubar.style.display = 'none';
 }
 
-// Fonction de déconnexion améliorée
-async function handleLogout() {
-    try {
-        console.log('🚪 Déconnexion...');
-        
-        if (authInstance) {
-            await authInstance.signOut();
-        }
-        
-        currentUser = null;
-        window.currentUser = null;
-        sessionStorage.clear();
-        
-        // Réinitialiser interface
-        const googleButton = document.querySelector('.google-signin-custom');
-        const authLoggedIn = document.getElementById('auth-logged-in');
-        
-        if (googleButton) googleButton.style.display = 'block';
-        if (authLoggedIn) authLoggedIn.style.display = 'none';
-        
-        hideApplication();
-        
-    } catch (error) {
-        console.error('❌ Erreur déconnexion:', error);
-        window.location.reload();
-    }
+// Fonction de déconnexion simplifiée
+function handleLogout() {
+    console.log('🚪 Déconnexion...');
+    
+    currentUser = null;
+    window.currentUser = null;
+    sessionStorage.clear();
+    
+    // Réinitialiser interface
+    const googleButton = document.querySelector('.g_id_signin');
+    const authLoggedIn = document.getElementById('auth-logged-in');
+    
+    if (googleButton) googleButton.style.display = 'block';
+    if (authLoggedIn) authLoggedIn.style.display = 'none';
+    
+    hideApplication();
+    window.location.reload();
 }
 
-// Initialisation
-document.addEventListener('DOMContentLoaded', async function() {
+// Initialisation simplifiée
+document.addEventListener('DOMContentLoaded', function() {
     console.log('🔧 Initialisation authentification...');
     
-    try {
-        await initGoogleAPI();
+    // Vérifier session existante
+    const savedEmail = sessionStorage.getItem('user_email');
+    const savedUserId = sessionStorage.getItem('user_id');
+    const savedName = sessionStorage.getItem('user_name');
+    
+    if (savedEmail && savedUserId) {
+        console.log('🔍 Session utilisateur trouvée:', savedEmail);
         
-        // Créer bouton de connexion personnalisé
-        createCustomSignInButton();
+        currentUser = {
+            email: savedEmail,
+            sub: savedUserId,
+            name: savedName || savedEmail
+        };
+        window.currentUser = currentUser;
         
-        // Configurer bouton déconnexion
-        const logoutButton = document.getElementById('logout-button');
-        if (logoutButton) {
-            logoutButton.addEventListener('click', handleLogout);
-        }
+        // Initialiser Drive en arrière-plan
+        initGoogleDriveAsync();
         
-        console.log('✅ Authentification initialisée');
-    } catch (error) {
-        console.error('❌ Erreur initialisation:', error);
+        // Afficher l'application
+        updateUIAfterLogin();
+    } else {
+        console.log('ℹ️ Aucune session, écran d\'accueil');
     }
+    
+    // Configurer bouton déconnexion
+    const logoutButton = document.getElementById('logout-button');
+    if (logoutButton) {
+        logoutButton.addEventListener('click', handleLogout);
+    }
+    
+    console.log('✅ Authentification initialisée');
 });
-
-// Créer un bouton de connexion personnalisé qui fonctionne
-function createCustomSignInButton() {
-    const existingButton = document.querySelector('.g_id_signin');
-    if (existingButton) {
-        // Remplacer le bouton GSI par un bouton personnalisé
-        const customButton = document.createElement('button');
-        customButton.className = 'google-signin-custom';
-        customButton.innerHTML = '🔐 Se connecter avec Google';
-        customButton.style.cssText = `
-            background: #4285f4;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-        `;
-        
-        customButton.addEventListener('click', signIn);
-        
-        existingButton.parentNode.replaceChild(customButton, existingButton);
-    }
-}
-
-// Fonction GSI de fallback (garde la compatibilité)
-window.handleCredentialResponse = function(response) {
-    console.log('🔐 Fallback GSI - redirection vers OAuth2');
-    signIn();
-};
