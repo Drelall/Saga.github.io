@@ -5,44 +5,54 @@ const storage = new GoogleDriveStorage();
 
 // Variables globales
 let rpList = [];
-let currentPage = 'active';
-let currentFilter = 'all';
-let currentSort = 'time-desc';
 
 console.log('📦 Renderer chargé');
 
-// Sauvegarder les données sur Google Drive uniquement
+// Sauvegarder les données
 async function saveData() {
-    console.log('💾 Sauvegarde des données...', rpList.length, 'RPs');
-    await storage.saveData(rpList);
-    console.log('✅ Sauvegarde réussie sur Google Drive');
+    try {
+        console.log('💾 Tentative sauvegarde...', rpList.length, 'RPs');
+        await storage.saveData(rpList);
+        console.log('✅ Sauvegarde réussie');
+    } catch (error) {
+        console.error('❌ Erreur sauvegarde:', error);
+        throw error;
+    }
 }
 
-// Charger les données depuis Google Drive uniquement
+// Charger les données
 async function loadData() {
-    console.log('📥 Chargement des données...');
-    rpList = await storage.loadData();
-    console.log('✅ Chargement réussi depuis Google Drive:', rpList.length, 'RPs');
+    try {
+        console.log('📥 Tentative chargement...');
+        rpList = await storage.loadData();
+        console.log('✅ Chargement réussi:', rpList.length, 'RPs');
+    } catch (error) {
+        console.error('❌ Erreur chargement:', error);
+        rpList = [];
+    }
 }
 
 // Afficher notification
 function showNotification(message, type = 'success') {
     console.log(`🔔 Notification ${type}:`, message);
     
-    const container = document.getElementById('notifications');
-    if (!container) return;
-    
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
     notification.textContent = message;
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 5px;
+        color: white;
+        font-weight: bold;
+        z-index: 1000;
+        ${type === 'success' ? 'background-color: #4CAF50;' : 'background-color: #f44336;'}
+    `;
     
-    container.appendChild(notification);
-    
-    setTimeout(() => notification.classList.add('show'), 100);
-    setTimeout(() => {
-        notification.classList.remove('show');
-        setTimeout(() => notification.remove(), 300);
-    }, 3000);
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 3000);
 }
 
 // Obtenir RPs actifs
@@ -188,171 +198,119 @@ function updateActiveCards() {
         cardsEmptyState.style.display = 'none';
     }
     
-    // Appliquer filtres et tri
-    let filteredList = activeRPs;
-    
-    if (currentFilter !== 'all') {
-        filteredList = activeRPs.filter(item => item.turn === currentFilter);
-    }
-    
-    // Trier
-    if (currentSort === 'time-desc') {
-        filteredList.sort((a, b) => b.date - a.date);
-    } else if (currentSort === 'time-asc') {
-        filteredList.sort((a, b) => a.date - b.date);
-    }
-    
     // Créer cartes
-    filteredList.forEach((item) => {
+    activeRPs.forEach((item) => {
         const card = createCard(item);
         cardsView.appendChild(card);
     });
     
-    // Attacher événements
-    attachCardEvents();
-    
-    console.log('✅ Cartes mises à jour:', filteredList.length, 'affichées');
-}
-
-// Attacher événements aux cartes
-function attachCardEvents() {
-    // Boutons supprimer
-    document.querySelectorAll('.delete-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            const id = e.target.closest('button').getAttribute('data-id');
-            const item = rpList.find(rp => rp.id == id);
-            
-            if (item && confirm(`Supprimer le RP "${item.rp}" ?`)) {
-                rpList = rpList.filter(rp => rp.id != id);
-                await saveData();
-                updateActiveCards();
-                showNotification(`RP "${item.rp}" supprimé`);
-            }
-        });
-    });
-    
-    // Boutons modifier
-    document.querySelectorAll('.edit-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const id = e.target.closest('button').getAttribute('data-id');
-            const item = rpList.find(rp => rp.id == id);
-            
-            if (item) {
-                // Remplir formulaire
-                document.getElementById('rpName').value = item.rp;
-                document.getElementById('partnerName').value = item.partner;
-                document.getElementById('rpLocation').value = item.location || '';
-                document.getElementById('rpType').value = item.type || '';
-                document.getElementById('rpUniverse').value = item.universe || '';
-                document.getElementById('rpUrl').value = item.url || '';
-                document.getElementById('turn').value = item.turn;
-                
-                // Supprimer de la liste
-                rpList = rpList.filter(rp => rp.id != id);
-                updateActiveCards();
-                showNotification('RP prêt à être modifié');
-            }
-        });
-    });
-}
-
-// Attendre connexion utilisateur ET API Google Drive
-function waitForAuth() {
-    return new Promise((resolve) => {
-        const check = () => {
-            if (window.currentUser && sessionStorage.getItem('user_id') && window.gapi && window.gapi.client) {
-                console.log('✅ Utilisateur connecté et API prête');
-                resolve();
-            } else {
-                console.log('⏳ Attente connexion et API...');
-                setTimeout(check, 1000);
-            }
-        };
-        check();
-    });
+    console.log('✅ Cartes mises à jour:', activeRPs.length, 'affichées');
 }
 
 // Initialisation
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 Initialisation renderer...');
     
-    // Gestionnaire formulaire
+    // TEST IMMÉDIAT - Vérifier si les éléments existent
     const rpForm = document.getElementById('rpForm');
-    if (rpForm) {
-        rpForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            console.log('📝 Soumission formulaire...');
-
-            // Vérifier connexion
-            if (!window.currentUser) {
-                alert('Veuillez vous connecter pour ajouter un RP');
-                return;
-            }
-
-            // Récupérer données formulaire
-            const rpName = document.getElementById('rpName').value.trim();
-            const partnerName = document.getElementById('partnerName').value.trim();
-            const location = document.getElementById('rpLocation').value.trim();
-            const type = document.getElementById('rpType').value.trim();
-            const universe = document.getElementById('rpUniverse').value.trim();
-            const url = document.getElementById('rpUrl').value.trim();
-            const turn = document.getElementById('turn').value;
-
-            console.log('📋 Données formulaire:', { rpName, partnerName, turn });
-
-            if (rpName && partnerName && turn) {
-                const newRP = {
-                    id: Date.now() + Math.random(),
-                    rp: rpName,
-                    partner: partnerName,
-                    location: location || '',
-                    type: type || '',
-                    universe: universe || '',
-                    url: url || '',
-                    turn: turn,
-                    date: new Date()
-                };
-
-                console.log('➕ Ajout nouveau RP:', newRP);
-                rpList.push(newRP);
-                
-                try {
-                    await saveData();
-                    updateActiveCards();
-                    rpForm.reset();
-                    showNotification(`RP "${rpName}" ajouté avec succès !`);
-                    console.log('✅ RP ajouté avec succès');
-                } catch (error) {
-                    console.error('❌ Erreur ajout RP:', error);
-                    rpList.pop(); // Retirer si échec
-                    showNotification('Erreur lors de l\'ajout', 'error');
-                }
-            } else {
-                console.warn('⚠️ Champs requis manquants');
-                showNotification('Veuillez remplir tous les champs requis', 'error');
-            }
-        });
-    } else {
-        console.error('❌ Formulaire rpForm non trouvé');
+    const rpName = document.getElementById('rpName');
+    const partnerName = document.getElementById('partnerName');
+    const turn = document.getElementById('turn');
+    
+    console.log('🔍 Vérification éléments DOM:');
+    console.log('- rpForm:', !!rpForm);
+    console.log('- rpName:', !!rpName);
+    console.log('- partnerName:', !!partnerName);
+    console.log('- turn:', !!turn);
+    
+    if (!rpForm) {
+        console.error('❌ PROBLÈME: Formulaire rpForm non trouvé!');
+        return;
     }
+    
+    // Gestionnaire formulaire avec DEBUG DÉTAILLÉ
+    rpForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        console.log('📝 🚨 FORMULAIRE SOUMIS! 🚨');
 
-    // Navigation
-    const navActive = document.getElementById('nav-active');
-    if (navActive) {
-        navActive.addEventListener('click', () => {
-            currentPage = 'active';
+        // Vérifier connexion
+        console.log('🔐 Vérification connexion utilisateur...');
+        console.log('- window.currentUser:', !!window.currentUser);
+        console.log('- sessionStorage user_id:', !!sessionStorage.getItem('user_id'));
+        
+        if (!window.currentUser) {
+            console.error('❌ Utilisateur non connecté');
+            alert('Veuillez vous connecter pour ajouter un RP');
+            return;
+        }
+
+        // Récupérer données formulaire
+        const rpNameValue = document.getElementById('rpName').value.trim();
+        const partnerNameValue = document.getElementById('partnerName').value.trim();
+        const locationValue = document.getElementById('rpLocation').value.trim();
+        const typeValue = document.getElementById('rpType').value.trim();
+        const universeValue = document.getElementById('rpUniverse').value.trim();
+        const urlValue = document.getElementById('rpUrl').value.trim();
+        const turnValue = document.getElementById('turn').value;
+
+        console.log('📋 Données récupérées:');
+        console.log('- RP:', rpNameValue);
+        console.log('- Partenaire:', partnerNameValue);
+        console.log('- Tour:', turnValue);
+
+        if (!rpNameValue || !partnerNameValue || !turnValue) {
+            console.error('❌ Champs requis manquants');
+            alert('Veuillez remplir tous les champs requis');
+            return;
+        }
+
+        const newRP = {
+            id: Date.now() + Math.random(),
+            rp: rpNameValue,
+            partner: partnerNameValue,
+            location: locationValue || '',
+            type: typeValue || '',
+            universe: universeValue || '',
+            url: urlValue || '',
+            turn: turnValue,
+            date: new Date()
+        };
+
+        console.log('➕ Nouveau RP créé:', newRP);
+        
+        // Ajouter à la liste
+        rpList.push(newRP);
+        console.log('📝 RP ajouté à la liste. Total:', rpList.length);
+        
+        try {
+            console.log('💾 Tentative sauvegarde...');
+            await saveData();
+            console.log('✅ Sauvegarde OK');
+            
+            console.log('🔄 Mise à jour affichage...');
             updateActiveCards();
-        });
-    }
-
-    // Attendre connexion ET API Google Drive
+            
+            console.log('🧹 Reset formulaire...');
+            rpForm.reset();
+            
+            showNotification(`RP "${rpNameValue}" ajouté avec succès !`);
+            console.log('🎉 SUCCÈS TOTAL!');
+            
+        } catch (error) {
+            console.error('❌ ERREUR CRITIQUE:', error);
+            rpList.pop(); // Retirer si échec
+            showNotification('Erreur lors de l\'ajout', 'error');
+        }
+    });
+    
+    // Charger données existantes
     try {
-        await waitForAuth();
+        console.log('📥 Chargement initial...');
         await loadData();
         updateActiveCards();
-        console.log('🎉 RP Tracker initialisé avec succès');
+        console.log('🎉 Initialisation terminée avec succès');
     } catch (error) {
         console.error('❌ Erreur initialisation:', error);
-        updateActiveCards(); // Afficher quand même
+        updateActiveCards();
     }
 });
