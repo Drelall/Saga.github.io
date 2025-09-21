@@ -1,21 +1,26 @@
 {
   "name": "RP Tracker",
-  "short_name": "RPTracker",
-  "description": "Application de suivi de RPs",
-  "start_url": ".",
+  "short_name": "RP Tracker",
+  "description": "Suivi de RPs (Partenaires, statut, progression).",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#000000",
+  "background_color": "#111111",
+  "theme_color": "#111111",
+  "lang": "fr",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "assets/icons/plume-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "assets/icons/plume-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }

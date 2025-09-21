@@ -5,79 +5,16 @@
   <title>RP Tracker</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="style.css">
-  
-  <!-- Scripts Google basiques -->
-  <script src="https://accounts.google.com/gsi/client" async></script>
-  
-  <!-- Ajouts pour PWA -->
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#111111">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <link rel="apple-touch-icon" href="assets/icons/plume-192.png">
+  <link rel="icon" type="image/png" href="icone/plume.png">
 </head>
 <body>
   <header>
     <div class="titre">
       <h1>RP Tracker</h1>
     </div>
-    <div class="auth-section">
-      <div id="g_id_onload"
-           data-client_id="239325905492-tu5l9oblsjjq1s3gii35juauscc2qrph.apps.googleusercontent.com"
-           data-callback="handleCredentialResponse"
-           data-auto_prompt="false">
-      </div>
-      <div class="google-signin-wrapper">
-        <div class="g_id_signin"
-             data-type="standard"
-             data-size="large"
-             data-theme="outline"
-             data-text="sign_in_with"
-             data-shape="rectangular"
-             data-logo_alignment="left">
-        </div>
-      </div>
-      <div id="auth-logged-in" style="display: none;">
-        <button id="logout-button" class="btn btn-danger">Déconnexion</button>
-      </div>
-    </div>
   </header>
 
-  <!-- Écran d'accueil -->
-  <div id="welcome-screen" class="welcome-screen">
-    <div class="welcome-content">
-      <h1>Bienvenue sur RP Tracker</h1>
-      <p>Connectez-vous avec Google pour commencer à gérer vos RPs</p>
-    </div>
-  </div>
-
-  <!-- Barre de menu -->
-  <nav class="menubar" style="display: none;">
-    <div class="menubar-left">
-      <div class="menu-item">
-        <button class="menu-button" id="fichier-menu">Fichier</button>
-        <ul class="menu-dropdown" id="fichier-dropdown">
-          <li><a href="#" id="exporter-donnees">Exporter les données</a></li>
-          <li class="menu-separator"></li>
-          <li><a href="#" id="importer-donnees">Importer des données</a></li>
-          <li class="menu-separator"></li>
-          <li><a href="#" id="effacer-donnees">Effacer les données</a></li>
-        </ul>
-      </div>
-    </div>
-    
-    <div class="menubar-right">
-      <div class="search-container">
-        <input type="text" id="search-input" placeholder="Rechercher dans les RPs..." autocomplete="off">
-        <div class="search-icon">🔍</div>
-        <button type="button" id="clear-search" class="clear-search" style="display: none;">×</button>
-      </div>
-    </div>
-  </nav>
-
-  <!-- Input file caché pour l'import -->
-  <input type="file" id="import-file" accept=".json" style="display: none;">
-
-  <div class="container" style="display: none;">
+  <div class="container">
     <form id="rpForm" class="formulaire">
       <div class="form-group">
         <label for="rpName">Nom du RP</label>
@@ -115,11 +52,6 @@
           <div class="autocomplete-suggestions" id="universeSuggestions"></div>
         </div>
       </div>
-
-      <div class="form-group">
-        <label for="rpUrl">Lien du RP (optionnel)</label>
-        <input type="url" id="rpUrl" placeholder="Ex: https://example.com/rp..." autocomplete="off">
-      </div>
       
       <div class="form-group">
         <label for="turn">À qui de poster ?</label>
@@ -134,7 +66,7 @@
       
       <div class="form-group">
         <button class="btn btn-primary" type="submit">
-          Ajouter
+          <img src="icone/stylo-a-plume.png" alt="Stylo à plume" class="btn-icon"> Ajouter
         </button>
       </div>
 
@@ -222,17 +154,6 @@
   <!-- Zone de notifications -->
   <div id="notifications"></div>
 
-  <script src="js/google-auth.js"></script>
-  <script type="module" src="js/renderer.js"></script>
-  
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js')
-          .then(reg => console.log('✅ Service Worker enregistré:', reg.scope))
-          .catch(err => console.warn('SW échec:', err));
-      });
-    }
-  </script>
+  <script src="renderer.js"></script>
 </body>
 </html>

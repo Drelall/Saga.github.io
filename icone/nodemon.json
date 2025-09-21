@@ -1,0 +1,14 @@
+{
+  "watch": [
+    "."
+  ],
+  "ext": "js,html,css",
+  "ignore": [
+    "node_modules/",
+    "dist/",
+    ".git/",
+    "*.log"
+  ],
+  "exec": "npm run dev",
+  "delay": 1000
+}
