@@ -15,8 +15,20 @@
   <link rel="apple-touch-icon" href="assets/icons/plume-192.png">
   <link rel="stylesheet" href="style.css">
   <link rel="icon" type="image/png" href="assets/icons/plume.png">
-  <script src="https://apis.google.com/js/api.js"></script>
-  <script src="https://accounts.google.com/gsi/client" async></script>
+  
+  <!-- Ajout des CSP pour autoriser Google -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://accounts.google.com https://www.gstatic.com;
+    style-src 'self' 'unsafe-inline' https://accounts.google.com;
+    font-src 'self' https://fonts.gstatic.com;
+    img-src 'self' data: https://www.gstatic.com;
+    connect-src 'self' https://accounts.google.com https://www.googleapis.com;
+    frame-src https://accounts.google.com;
+  ">
+  
+  <script src="https://apis.google.com/js/api.js" defer></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
   <header>
@@ -225,7 +237,7 @@
   <!-- Zone de notifications -->
   <div id="notifications"></div>
 
-  <script src="js/google-auth.js"></script>
-  <script type="module" src="renderer.js"></script>
+  <script src="js/google-auth.js" defer></script>
+  <script type="module" src="js/renderer.js" defer></script>
 </body>
 </html>
