@@ -1,6 +1,5 @@
 // Configuration Google
 const GOOGLE_CLIENT_ID = '239325905492-tu5l9oblsjjq1s3gii35juauscc2qrph.apps.googleusercontent.com';
-const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/drive.appdata';
 
 // Variables globales
 let currentUser = null;
@@ -24,13 +23,17 @@ window.handleCredentialResponse = function(response) {
         sessionStorage.setItem('user_email', currentUser.email);
         sessionStorage.setItem('user_id', currentUser.sub);
         
-        // Initialiser l'API Google pour Drive
-        initGoogleAPI().then(() => {
+        // Exposer currentUser globalement
+        window.currentUser = currentUser;
+        
+        // Initialiser l'API Google pour Drive APRÈS la connexion
+        initGoogleDriveAPI().then(() => {
             // Mettre à jour l'interface
             updateUIAfterLogin();
         }).catch(error => {
-            console.error('Erreur initialisation API Google:', error);
-            alert('Erreur lors de l\'initialisation de Google Drive');
+            console.error('Erreur initialisation API Google Drive:', error);
+            // Continuer même si Drive échoue
+            updateUIAfterLogin();
         });
         
     } catch (error) {
@@ -39,32 +42,46 @@ window.handleCredentialResponse = function(response) {
     }
 };
 
-// Initialiser l'API Google pour accéder à Drive
-async function initGoogleAPI() {
+// Initialiser l'API Google Drive avec OAuth2
+async function initGoogleDriveAPI() {
     try {
+        console.log('Initialisation de Google Drive API...');
+        
+        // Charger gapi.client si pas déjà fait
         await new Promise((resolve, reject) => {
-            window.gapi.load('auth2:client', {
-                callback: resolve,
-                onerror: reject
-            });
+            if (window.gapi && window.gapi.client) {
+                resolve();
+            } else {
+                gapi.load('client:auth2', {
+                    callback: resolve,
+                    onerror: reject
+                });
+            }
         });
 
+        // Initialiser le client avec les scopes Drive
         await gapi.client.init({
             clientId: GOOGLE_CLIENT_ID,
-            scope: GOOGLE_SCOPES,
+            scope: 'https://www.googleapis.com/auth/drive.appdata',
             discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
         });
 
-        // Obtenir l'autorisation pour Google Drive
+        // Vérifier si l'utilisateur est déjà autorisé
         const authInstance = gapi.auth2.getAuthInstance();
-        if (!authInstance.isSignedIn.get()) {
-            await authInstance.signIn();
+        const isAuthorized = authInstance.isSignedIn.get();
+        
+        if (!isAuthorized) {
+            // Demander l'autorisation pour Google Drive
+            await authInstance.signIn({
+                scope: 'https://www.googleapis.com/auth/drive.appdata'
+            });
         }
 
-        console.log('API Google Drive initialisée avec succès');
+        console.log('✅ API Google Drive initialisée avec succès');
         window.gapi = gapi; // Rendre gapi accessible globalement
+        
     } catch (error) {
-        console.error('Erreur initialisation API Google:', error);
+        console.error('❌ Erreur initialisation API Google Drive:', error);
         throw error;
     }
 }
@@ -177,8 +194,13 @@ document.addEventListener('DOMContentLoaded', function() {
         // Exposer currentUser globalement
         window.currentUser = currentUser;
         
-        // Mettre à jour l'interface
-        updateUIAfterLogin();
+        // Initialiser Google Drive API pour la session restaurée
+        initGoogleDriveAPI().then(() => {
+            updateUIAfterLogin();
+        }).catch(error => {
+            console.error('Erreur initialisation Drive pour session restaurée:', error);
+            updateUIAfterLogin();
+        });
     } else {
         console.log('Aucune session trouvée, affichage de l\'écran d\'accueil');
     }

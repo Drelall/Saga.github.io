@@ -448,14 +448,16 @@ function updateCurrentView() {
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('Renderer chargé');
     
-    // Attendre que l'utilisateur soit connecté
+    // Attendre que l'utilisateur soit connecté ET que Drive soit initialisé
     const waitForAuth = () => {
         return new Promise((resolve) => {
             const checkAuth = () => {
-                if (window.currentUser && sessionStorage.getItem('user_id')) {
+                if (window.currentUser && sessionStorage.getItem('user_id') && window.gapi && window.gapi.client) {
+                    console.log('✅ Utilisateur connecté et APIs initialisées');
                     resolve();
                 } else {
-                    setTimeout(checkAuth, 500);
+                    console.log('⏳ Attente de la connexion et des APIs...');
+                    setTimeout(checkAuth, 1000);
                 }
             };
             checkAuth();
@@ -495,6 +497,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     date: new Date()
                 };
 
+                console.log('🔄 Ajout du RP:', newRP.rp);
                 rpList.push(newRP);
                 
                 try {
@@ -502,9 +505,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                     updateCurrentView();
                     rpForm.reset();
                     showNotification(`RP "${rpName}" ajouté avec succès !`);
+                    console.log('✅ RP ajouté avec succès');
                 } catch (error) {
-                    console.error('Erreur lors de la sauvegarde:', error);
+                    console.error('❌ Erreur lors de la sauvegarde:', error);
                     showNotification('Erreur lors de la sauvegarde du RP', 'error');
+                    // Retirer le RP de la liste si la sauvegarde a échoué
+                    rpList.pop();
                 }
             }
         });
@@ -583,12 +589,14 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Attendre la connexion et charger les données
     try {
+        console.log('⏳ Attente de l\'authentification...');
         await waitForAuth();
+        console.log('🔄 Chargement des données...');
         await loadData();
         switchPage('active');
         console.log('🚀 RP Tracker initialisé avec succès');
     } catch (error) {
-        console.error('Erreur lors de l\'initialisation:', error);
+        console.error('❌ Erreur lors de l\'initialisation:', error);
         switchPage('active');
     }
 });

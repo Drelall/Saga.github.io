@@ -12,24 +12,24 @@ class GoogleDriveStorage {
         if (this.isInitialized) return;
 
         try {
-            await new Promise((resolve, reject) => {
-                gapi.load('client', {
-                    callback: resolve,
-                    onerror: reject
-                });
-            });
+            // Vérifier que gapi est disponible
+            if (!window.gapi || !window.gapi.client) {
+                throw new Error('Google API client non disponible');
+            }
 
-            await gapi.client.init({
-                discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
-            });
+            // Vérifier que l'utilisateur est connecté
+            if (!window.currentUser) {
+                throw new Error('Utilisateur non connecté');
+            }
 
             this.isInitialized = true;
-            console.log('Google Drive API initialisée');
+            console.log('Google Drive Storage initialisé');
             
             // Chercher le fichier existant
             await this.findDataFile();
         } catch (error) {
-            console.error('Erreur initialisation Google Drive:', error);
+            console.error('Erreur initialisation Google Drive Storage:', error);
+            this.isInitialized = false;
             throw error;
         }
     }
@@ -42,14 +42,15 @@ class GoogleDriveStorage {
                 spaces: 'appDataFolder'
             });
 
-            if (response.result.files.length > 0) {
+            if (response.result.files && response.result.files.length > 0) {
                 this.fileId = response.result.files[0].id;
                 console.log('Fichier de données trouvé:', this.fileId);
             } else {
-                console.log('Aucun fichier de données trouvé');
+                console.log('Aucun fichier de données trouvé, sera créé à la première sauvegarde');
             }
         } catch (error) {
             console.error('Erreur recherche fichier:', error);
+            // Ne pas faire échouer l'initialisation pour cette erreur
         }
     }
 
@@ -103,14 +104,14 @@ class GoogleDriveStorage {
             }
 
             const response = await request;
-            if (!this.fileId) {
+            if (!this.fileId && response.result && response.result.id) {
                 this.fileId = response.result.id;
             }
             
-            console.log('Données sauvegardées sur Google Drive');
+            console.log('✅ Données sauvegardées sur Google Drive');
             return response;
         } catch (error) {
-            console.error('Erreur sauvegarde Google Drive:', error);
+            console.error('❌ Erreur sauvegarde Google Drive:', error);
             throw error;
         }
     }
@@ -130,28 +131,17 @@ class GoogleDriveStorage {
                 alt: 'media'
             });
 
-            const data = JSON.parse(response.body);
-            console.log('Données chargées depuis Google Drive:', data.length, 'RPs');
-            return data;
-        } catch (error) {
-            console.error('Erreur chargement Google Drive:', error);
-            return [];
-        }
-    }
-
-    // Supprimer toutes les données
-    async deleteData() {
-        try {
-            if (this.fileId) {
-                await gapi.client.drive.files.delete({
-                    fileId: this.fileId
-                });
-                this.fileId = null;
-                console.log('Données supprimées de Google Drive');
+            if (response.body) {
+                const data = JSON.parse(response.body);
+                console.log('✅ Données chargées depuis Google Drive:', data.length, 'RPs');
+                return Array.isArray(data) ? data : [];
+            } else {
+                console.log('Fichier vide, retour tableau vide');
+                return [];
             }
         } catch (error) {
-            console.error('Erreur suppression Google Drive:', error);
-            throw error;
+            console.error('❌ Erreur chargement Google Drive:', error);
+            return [];
         }
     }
 }
