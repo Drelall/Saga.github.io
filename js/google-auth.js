@@ -4,77 +4,75 @@ const GOOGLE_CLIENT_ID = '239325905492-tu5l9oblsjjq1s3gii35juauscc2qrph.apps.goo
 // Variables globales
 let currentUser = null;
 window.currentUser = null;
+let authInstance = null;
 
-// Fonction appelée par Google après connexion réussie
-window.handleCredentialResponse = function(response) {
-    console.log('🔐 Connexion Google réussie !');
-    
+// Initialiser Google API avec OAuth2 (méthode utilisée par de nombreux développeurs)
+async function initGoogleAPI() {
     try {
-        // Décoder le token JWT
-        const payload = JSON.parse(atob(response.credential.split('.')[1]));
-        currentUser = payload;
-        window.currentUser = currentUser;
+        console.log('🔧 Initialisation Google API...');
         
-        console.log('👤 Utilisateur connecté:', currentUser.email);
-        
-        // Stocker les informations
-        sessionStorage.setItem('google_token', response.credential);
-        sessionStorage.setItem('user_email', currentUser.email);
-        sessionStorage.setItem('user_id', currentUser.sub);
-        
-        // Initialiser Google Drive API AVANT d'afficher l'interface
-        initGoogleDriveAPI().then(() => {
-            updateUIAfterLogin();
-        }).catch(error => {
-            console.error('❌ Erreur Google Drive API:', error);
-            updateUIAfterLogin(); // Continuer même si Drive échoue
-        });
-        
-    } catch (error) {
-        console.error('❌ Erreur traitement connexion:', error);
-        alert('Erreur lors de la connexion');
-    }
-};
-
-// Initialiser Google Drive API
-async function initGoogleDriveAPI() {
-    try {
-        console.log('🔧 Initialisation Google Drive API...');
-        
-        // Attendre que gapi soit disponible
-        if (!window.gapi) {
-            throw new Error('GAPI non disponible');
-        }
-        
-        // Charger les modules nécessaires
-        await new Promise((resolve, reject) => {
-            gapi.load('client:auth2', {
-                callback: resolve,
-                onerror: reject
-            });
+        // Charger gapi
+        await new Promise((resolve) => {
+            gapi.load('auth2:client', resolve);
         });
 
-        // Initialiser le client avec les permissions Drive
+        // Initialiser le client avec TOUS les scopes nécessaires
         await gapi.client.init({
             clientId: GOOGLE_CLIENT_ID,
-            scope: 'https://www.googleapis.com/auth/drive.appdata',
+            scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.appdata',
             discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
         });
 
-        // Obtenir l'autorisation Drive si nécessaire
-        const authInstance = gapi.auth2.getAuthInstance();
-        if (!authInstance.isSignedIn.get()) {
-            await authInstance.signIn({
-                scope: 'https://www.googleapis.com/auth/drive.appdata'
-            });
-        }
+        authInstance = gapi.auth2.getAuthInstance();
+        console.log('✅ Google API initialisée');
 
-        console.log('✅ Google Drive API initialisée');
-        window.gapi = gapi; // Rendre accessible globalement
+        // Vérifier si déjà connecté
+        if (authInstance.isSignedIn.get()) {
+            const user = authInstance.currentUser.get();
+            handleSignIn(user);
+        } else {
+            console.log('ℹ️ Utilisateur non connecté');
+        }
         
+        return true;
     } catch (error) {
-        console.error('❌ Erreur Google Drive API:', error);
+        console.error('❌ Erreur initialisation Google API:', error);
         throw error;
+    }
+}
+
+// Gérer la connexion
+function handleSignIn(googleUser) {
+    const profile = googleUser.getBasicProfile();
+    
+    currentUser = {
+        email: profile.getEmail(),
+        name: profile.getName(),
+        sub: profile.getId(),
+        picture: profile.getImageUrl()
+    };
+    
+    window.currentUser = currentUser;
+    
+    console.log('👤 Utilisateur connecté:', currentUser.email);
+    
+    // Stocker les informations
+    sessionStorage.setItem('user_email', currentUser.email);
+    sessionStorage.setItem('user_id', currentUser.sub);
+    sessionStorage.setItem('user_name', currentUser.name);
+    
+    updateUIAfterLogin();
+}
+
+// Fonction de connexion manuelle
+async function signIn() {
+    try {
+        console.log('🔐 Tentative de connexion...');
+        const user = await authInstance.signIn();
+        handleSignIn(user);
+    } catch (error) {
+        console.error('❌ Erreur connexion:', error);
+        alert('Erreur lors de la connexion');
     }
 }
 
@@ -134,59 +132,82 @@ function hideApplication() {
     if (menubar) menubar.style.display = 'none';
 }
 
-// Fonction de déconnexion
-function handleLogout() {
-    console.log('🚪 Déconnexion...');
-    
-    currentUser = null;
-    window.currentUser = null;
-    sessionStorage.clear();
-    
-    // Réinitialiser interface
-    const googleButton = document.querySelector('.g_id_signin');
-    const authLoggedIn = document.getElementById('auth-logged-in');
-    
-    if (googleButton) googleButton.style.display = 'block';
-    if (authLoggedIn) authLoggedIn.style.display = 'none';
-    
-    hideApplication();
-    window.location.reload();
+// Fonction de déconnexion améliorée
+async function handleLogout() {
+    try {
+        console.log('🚪 Déconnexion...');
+        
+        if (authInstance) {
+            await authInstance.signOut();
+        }
+        
+        currentUser = null;
+        window.currentUser = null;
+        sessionStorage.clear();
+        
+        // Réinitialiser interface
+        const googleButton = document.querySelector('.google-signin-custom');
+        const authLoggedIn = document.getElementById('auth-logged-in');
+        
+        if (googleButton) googleButton.style.display = 'block';
+        if (authLoggedIn) authLoggedIn.style.display = 'none';
+        
+        hideApplication();
+        
+    } catch (error) {
+        console.error('❌ Erreur déconnexion:', error);
+        window.location.reload();
+    }
 }
 
 // Initialisation
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     console.log('🔧 Initialisation authentification...');
     
-    // Vérifier session existante
-    const savedToken = sessionStorage.getItem('google_token');
-    const savedEmail = sessionStorage.getItem('user_email');
-    const savedUserId = sessionStorage.getItem('user_id');
-    
-    if (savedToken && savedEmail && savedUserId) {
-        console.log('🔍 Session utilisateur trouvée:', savedEmail);
+    try {
+        await initGoogleAPI();
         
-        currentUser = {
-            email: savedEmail,
-            sub: savedUserId
-        };
-        window.currentUser = currentUser;
+        // Créer bouton de connexion personnalisé
+        createCustomSignInButton();
         
-        // Réinitialiser Google Drive pour la session existante
-        initGoogleDriveAPI().then(() => {
-            updateUIAfterLogin();
-        }).catch(error => {
-            console.error('❌ Erreur restauration Drive:', error);
-            updateUIAfterLogin();
-        });
-    } else {
-        console.log('ℹ️ Aucune session, écran d\'accueil');
+        // Configurer bouton déconnexion
+        const logoutButton = document.getElementById('logout-button');
+        if (logoutButton) {
+            logoutButton.addEventListener('click', handleLogout);
+        }
+        
+        console.log('✅ Authentification initialisée');
+    } catch (error) {
+        console.error('❌ Erreur initialisation:', error);
     }
-    
-    // Configurer bouton déconnexion
-    const logoutButton = document.getElementById('logout-button');
-    if (logoutButton) {
-        logoutButton.addEventListener('click', handleLogout);
-    }
-    
-    console.log('✅ Authentification initialisée');
 });
+
+// Créer un bouton de connexion personnalisé qui fonctionne
+function createCustomSignInButton() {
+    const existingButton = document.querySelector('.g_id_signin');
+    if (existingButton) {
+        // Remplacer le bouton GSI par un bouton personnalisé
+        const customButton = document.createElement('button');
+        customButton.className = 'google-signin-custom';
+        customButton.innerHTML = '🔐 Se connecter avec Google';
+        customButton.style.cssText = `
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        `;
+        
+        customButton.addEventListener('click', signIn);
+        
+        existingButton.parentNode.replaceChild(customButton, existingButton);
+    }
+}
+
+// Fonction GSI de fallback (garde la compatibilité)
+window.handleCredentialResponse = function(response) {
+    console.log('🔐 Fallback GSI - redirection vers OAuth2');
+    signIn();
+};
