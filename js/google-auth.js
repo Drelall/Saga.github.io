@@ -5,7 +5,7 @@ const GOOGLE_CLIENT_ID = '239325905492-tu5l9oblsjjq1s3gii35juauscc2qrph.apps.goo
 let currentUser = null;
 window.currentUser = null;
 
-// Fonction GSI (Google Sign-In) - Version simplifiée qui fonctionne
+// Fonction GSI simple qui marche
 window.handleCredentialResponse = function(response) {
     console.log('🔐 Connexion Google réussie !');
     
@@ -22,55 +22,14 @@ window.handleCredentialResponse = function(response) {
         sessionStorage.setItem('user_id', currentUser.sub);
         sessionStorage.setItem('user_name', currentUser.name || currentUser.email);
         
-        // Initialiser Google Drive en arrière-plan (sans bloquer l'UI)
-        initGoogleDriveAsync();
-        
-        // Afficher l'application immédiatement
+        // Afficher l'application DIRECTEMENT
         updateUIAfterLogin();
         
     } catch (error) {
-        console.error('❌ Erreur traitement connexion:', error);
+        console.error('❌ Erreur connexion:', error);
         alert('Erreur lors de la connexion');
     }
 };
-
-// Initialiser Google Drive en arrière-plan (non bloquant)
-async function initGoogleDriveAsync() {
-    try {
-        console.log('🔧 Initialisation Google Drive en arrière-plan...');
-        
-        // Attendre que gapi soit disponible
-        if (!window.gapi) {
-            console.warn('⚠️ GAPI non disponible, Drive sera désactivé temporairement');
-            return;
-        }
-        
-        // Charger les modules nécessaires
-        await new Promise((resolve, reject) => {
-            gapi.load('client:auth2', {
-                callback: resolve,
-                onerror: () => {
-                    console.warn('⚠️ Erreur chargement GAPI modules');
-                    resolve(); // Continuer même si ça échoue
-                }
-            });
-        });
-
-        // Initialiser le client avec les permissions Drive
-        await gapi.client.init({
-            clientId: GOOGLE_CLIENT_ID,
-            scope: 'https://www.googleapis.com/auth/drive.appdata',
-            discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
-        });
-
-        console.log('✅ Google Drive API initialisée en arrière-plan');
-        window.gapi = gapi;
-        
-    } catch (error) {
-        console.warn('⚠️ Google Drive non disponible, utilisation en mode dégradé:', error);
-        // L'application continue de fonctionner sans Drive
-    }
-}
 
 // Fonction pour mettre à jour l'interface après connexion
 function updateUIAfterLogin() {
@@ -147,39 +106,32 @@ function handleLogout() {
     window.location.reload();
 }
 
-// Initialisation simplifiée
+// Initialisation ULTRA SIMPLE
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🔧 Initialisation authentification...');
+    console.log('🔧 Initialisation...');
     
     // Vérifier session existante
     const savedEmail = sessionStorage.getItem('user_email');
     const savedUserId = sessionStorage.getItem('user_id');
-    const savedName = sessionStorage.getItem('user_name');
     
     if (savedEmail && savedUserId) {
-        console.log('🔍 Session utilisateur trouvée:', savedEmail);
+        console.log('🔍 Session trouvée:', savedEmail);
         
         currentUser = {
             email: savedEmail,
             sub: savedUserId,
-            name: savedName || savedEmail
+            name: sessionStorage.getItem('user_name') || savedEmail
         };
         window.currentUser = currentUser;
         
-        // Initialiser Drive en arrière-plan
-        initGoogleDriveAsync();
-        
-        // Afficher l'application
         updateUIAfterLogin();
-    } else {
-        console.log('ℹ️ Aucune session, écran d\'accueil');
     }
     
-    // Configurer bouton déconnexion
+    // Bouton déconnexion
     const logoutButton = document.getElementById('logout-button');
     if (logoutButton) {
         logoutButton.addEventListener('click', handleLogout);
     }
     
-    console.log('✅ Authentification initialisée');
+    console.log('✅ Prêt');
 });
