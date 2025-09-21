@@ -3,595 +3,595 @@ import GoogleDriveStorage from './js/google-drive-storage.js';
 // Instance du gestionnaire Google Drive
 const driveStorage = new GoogleDriveStorage();
 
-const rpForm = document.getElementById('rpForm');
-const notificationsContainer = document.getElementById('notifications');
-
-// Éléments pour les RPs actifs
-const cardsView = document.getElementById('cards-view');
-const cardsEmptyState = document.getElementById('cards-empty-state');
-const viewFilter = document.getElementById('view-filter');
-const sortSelect = document.getElementById('sort-select');
-
-// Éléments pour les RPs archivés
-const cardsViewArchive = document.getElementById('cards-view-archive');
-const cardsEmptyStateArchive = document.getElementById('cards-empty-state-archive');
-const viewFilterArchive = document.getElementById('view-filter-archive');
-const sortSelectArchive = document.getElementById('sort-select-archive');
-
-// Éléments de navigation
-const navActive = document.getElementById('nav-active');
-const navArchive = document.getElementById('nav-archive');
-const pageActive = document.getElementById('page-active');
-const pageArchive = document.getElementById('page-archive');
-const controlsActive = document.getElementById('controls-active');
-const controlsArchive = document.getElementById('controls-archive');
-
+// Variables globales
 let rpList = [];
-let currentPage = 'active'; // 'active' ou 'archive'
+let currentPage = 'active';
 let currentFilter = 'all';
 let currentSort = 'time-desc';
 let currentFilterArchive = 'all';
 let currentSortArchive = 'time-desc';
-let searchQuery = ''; // Nouvelle variable pour la recherche
-
-// Timer pour mettre à jour l'affichage du temps
+let searchQuery = '';
 let timeUpdateInterval = null;
 
-// Système de suggestions utilisateur
-let userSuggestions = {
-  partners: [],
-  locations: [],
-  types: [],
-  universes: []
-};
-
-// Charger les suggestions depuis le localStorage
-if (localStorage.getItem('userSuggestions')) {
-  userSuggestions = JSON.parse(localStorage.getItem('userSuggestions'));
-}
-
-// Sauvegarder les suggestions
-function saveSuggestions() {
-  localStorage.setItem('userSuggestions', JSON.stringify(userSuggestions));
-}
-
-// Ajouter une suggestion
-function addSuggestion(type, value) {
-  if (value && !userSuggestions[type].includes(value)) {
-    userSuggestions[type].push(value);
-    saveSuggestions();
-  }
-}
-
-// Obtenir les suggestions filtrées
-function getSuggestions(type, query) {
-  if (!query) return userSuggestions[type].slice(0, 5);
-  
-  const filtered = userSuggestions[type].filter(item => 
-    item.toLowerCase().includes(query.toLowerCase())
-  );
-  
-  // Trier par pertinence (correspondance exacte en premier)
-  return filtered.sort((a, b) => {
-    const aStartsWith = a.toLowerCase().startsWith(query.toLowerCase());
-    const bStartsWith = b.toLowerCase().startsWith(query.toLowerCase());
-    if (aStartsWith && !bStartsWith) return -1;
-    if (!aStartsWith && bStartsWith) return 1;
-    return a.length - b.length;
-  }).slice(0, 5);
-}
-
-// Créer un élément de suggestion
-function createSuggestionElement(value, isFrequent = false) {
-  const suggestion = document.createElement('div');
-  suggestion.className = `autocomplete-suggestion ${isFrequent ? 'frequent' : ''}`;
-  suggestion.textContent = value;
-  suggestion.dataset.value = value;
-  return suggestion;
-}
-
-// Configurer l'auto-complétion pour un champ
-function setupAutocomplete(inputId, suggestionsId, type) {
-  const input = document.getElementById(inputId);
-  const suggestionsContainer = document.getElementById(suggestionsId);
-  let selectedIndex = -1;
-
-  input.addEventListener('input', function() {
-    const query = this.value.trim();
-    const suggestions = getSuggestions(type, query);
-    
-    suggestionsContainer.innerHTML = '';
-    selectedIndex = -1;
-    
-    if (suggestions.length > 0 && query.length > 0) {
-      suggestions.forEach((suggestion, index) => {
-        const element = createSuggestionElement(suggestion, userSuggestions[type].indexOf(suggestion) < 3);
-        element.addEventListener('click', () => {
-          input.value = suggestion;
-          suggestionsContainer.style.display = 'none';
-        });
-        suggestionsContainer.appendChild(element);
-      });
-      suggestionsContainer.style.display = 'block';
-    } else {
-      suggestionsContainer.style.display = 'none';
+// Sauvegarder les données sur Google Drive uniquement
+async function saveData() {
+    try {
+        if (!window.currentUser || !sessionStorage.getItem('user_id')) {
+            throw new Error('Utilisateur non connecté');
+        }
+        
+        await driveStorage.saveData(rpList);
+        console.log('Données sauvegardées sur Google Drive');
+    } catch (error) {
+        console.error('Erreur sauvegarde:', error);
+        throw error;
     }
-  });
-
-  input.addEventListener('keydown', function(e) {
-    const suggestions = suggestionsContainer.querySelectorAll('.autocomplete-suggestion');
-    
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      selectedIndex = Math.min(selectedIndex + 1, suggestions.length - 1);
-      updateSelection();
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      selectedIndex = Math.max(selectedIndex - 1, -1);
-      updateSelection();
-    } else if (e.key === 'Enter' && selectedIndex >= 0) {
-      e.preventDefault();
-      input.value = suggestions[selectedIndex].dataset.value;
-      suggestionsContainer.style.display = 'none';
-    } else if (e.key === 'Escape') {
-      suggestionsContainer.style.display = 'none';
-    }
-    
-    function updateSelection() {
-      suggestions.forEach((s, i) => {
-        s.classList.toggle('selected', i === selectedIndex);
-      });
-    }
-  });
-
-  // Masquer les suggestions lors du clic à l'extérieur
-  document.addEventListener('click', function(e) {
-    if (!input.contains(e.target) && !suggestionsContainer.contains(e.target)) {
-      suggestionsContainer.style.display = 'none';
-    }
-  });
 }
 
-// Sauvegarder et charger la liste (version unifiée)
-async function saveList() {
-  try {
-    // Vérifier si l'utilisateur est connecté
-    if (window.currentUser && sessionStorage.getItem('user_id')) {
-      // Sauvegarder sur Google Drive
-      await driveStorage.saveData(rpList);
-      console.log('Données sauvegardées sur Google Drive');
-    } else {
-      // Fallback vers localStorage
-      localStorage.setItem('rpList', JSON.stringify(rpList));
-      console.log('Données sauvegardées en local');
-    }
-  } catch (error) {
-    console.error('Erreur sauvegarde:', error);
-    // Fallback vers localStorage en cas d'erreur
-    localStorage.setItem('rpList', JSON.stringify(rpList));
-  }
-}
-
-async function loadList() {
-  try {
-    // Vérifier si l'utilisateur est connecté
-    if (window.currentUser && sessionStorage.getItem('user_id')) {
-      // Charger depuis Google Drive
-      const data = await driveStorage.loadData();
-      rpList = data.map(item => {
-        // Convertir les données au format attendu
-        return {
-          id: item.id || Date.now() + Math.random(),
-          rp: item.title || item.rp,
-          partner: item.partner,
-          location: item.location || '',
-          type: item.type || '',
-          universe: item.universe || '',
-          url: item.url || '',
-          turn: item.status || item.turn,
-          date: new Date(item.created_at || item.date || Date.now())
-        };
-      });
-      console.log(`${rpList.length} RPs chargés depuis Google Drive`);
-    } else {
-      // Charger depuis localStorage
-      if (localStorage.getItem('rpList')) {
-        rpList = JSON.parse(localStorage.getItem('rpList')).map(item => {
-          let itemDate = item.date;
-          if (typeof itemDate === 'string') {
-            itemDate = new Date(itemDate);
-          } else if (typeof itemDate === 'number') {
-            itemDate = new Date(itemDate);
-          } else if (!(itemDate instanceof Date)) {
-            itemDate = new Date();
-          }
-          
-          if (isNaN(itemDate.getTime())) {
-            itemDate = new Date();
-          }
-          
-          return {
-            ...item,
-            date: itemDate
-          };
-        });
-        console.log(`${rpList.length} RPs chargés depuis localStorage`);
-      }
-    }
-  } catch (error) {
-    console.error('Erreur chargement:', error);
-    // Fallback vers localStorage
-    if (localStorage.getItem('rpList')) {
-      try {
-        rpList = JSON.parse(localStorage.getItem('rpList')).map(item => {
-          let itemDate = item.date;
-          if (typeof itemDate === 'string') {
-            itemDate = new Date(itemDate);
-          } else if (typeof itemDate === 'number') {
-            itemDate = new Date(itemDate);
-          } else if (!(itemDate instanceof Date)) {
-            itemDate = new Date();
-          }
-          
-          if (isNaN(itemDate.getTime())) {
-            itemDate = new Date();
-          }
-          
-          return {
-            ...item,
-            date: itemDate
-          };
-        });
-      } catch (error) {
-        console.error('Erreur lors du chargement des données localStorage:', error);
+// Charger les données depuis Google Drive uniquement
+async function loadData() {
+    try {
+        if (!window.currentUser || !sessionStorage.getItem('user_id')) {
+            rpList = [];
+            return;
+        }
+        
+        const data = await driveStorage.loadData();
+        rpList = data.map(item => ({
+            id: item.id || Date.now() + Math.random(),
+            rp: item.title || item.rp,
+            partner: item.partner,
+            location: item.location || '',
+            type: item.type || '',
+            universe: item.universe || '',
+            url: item.url || '',
+            turn: item.status || item.turn,
+            date: new Date(item.created_at || item.date || Date.now())
+        }));
+        
+        console.log(`${rpList.length} RPs chargés depuis Google Drive`);
+    } catch (error) {
+        console.error('Erreur chargement:', error);
         rpList = [];
-      }
     }
-  }
+}
+
+// Afficher les notifications
+function showNotification(message, type = 'success') {
+    const notificationsContainer = document.getElementById('notifications');
+    if (!notificationsContainer) return;
+    
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    
+    notificationsContainer.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 100);
+    
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
+}
+
+// Fonctions utilitaires pour séparer les RPs
+function getActiveRPs() {
+    return rpList.filter(rp => rp.turn !== 'RP terminé' && rp.turn !== 'RP abandonné');
+}
+
+function getArchivedRPs() {
+    return rpList.filter(rp => rp.turn === 'RP terminé' || rp.turn === 'RP abandonné');
 }
 
 // Calculer le temps écoulé
 function getTimeDisplay(date) {
-  // S'assurer que nous avons une date valide
-  if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
-    console.warn('Date invalide passée à getTimeDisplay:', date);
-    return { timeStr: 'Date invalide', className: 'time-normal' };
-  }
-  
-  const now = new Date();
-  const diffMs = now - date;
-  const diffMinutes = Math.floor(diffMs / (1000 * 60));
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.floor(diffHours / 24);
-  
-  let timeStr = '';
-  let className = 'time-normal';
-  
-  if (diffDays > 0) {
-    timeStr = `Il y a ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
-    if (diffDays >= 7) className = 'time-urgent';
-    else if (diffDays >= 3) className = 'time-warning';
-  } else if (diffHours > 0) {
-    timeStr = `Il y a ${diffHours} heure${diffHours > 1 ? 's' : ''}`;
-  } else if (diffMinutes > 0) {
-    timeStr = `Il y a ${diffMinutes} minute${diffMinutes > 1 ? 's' : ''}`;
-  } else {
-    timeStr = 'À l\'instant';
-  }
-  
-  return { timeStr, className };
-}
-
-// Remettre le compteur de temps à zéro
-function resetTimeCounter(id) {
-  const rpIndex = rpList.findIndex(rp => rp.id === id);
-  
-  if (rpIndex !== -1) {
-    // Mettre à jour la date à maintenant
-    rpList[rpIndex].date = new Date();
-    
-    // Sauvegarder
-    saveList();
-    
-    // Mettre à jour l'affichage
-    updateActiveCards();
-    
-    // Afficher un message de confirmation
-    showNotification('Compteur de temps remis à zéro !', 'success');
-  }
-}
-
-// Gérer le clic sur l'icône de lien
-function handleLinkClick(id, url) {
-  if (url && url.trim() !== '') {
-    // Ouvrir l'URL si elle existe
-    openRPLink(url);
-  } else {
-    // Demander une URL si elle n'existe pas
-    promptForURL(id);
-  }
-}
-
-// Ouvrir le lien du RP
-function openRPLink(url) {
-  try {
-    // S'assurer que l'URL a un protocole
-    let fullUrl = url;
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      fullUrl = 'https://' + url;
+    if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+        return { timeStr: 'Date invalide', className: 'time-normal' };
     }
     
-    // Ouvrir dans le navigateur par défaut
-    require('electron').shell.openExternal(fullUrl);
-    showNotification('Ouverture du lien du RP...', 'success');
-  } catch (error) {
-    console.error('Erreur lors de l\'ouverture du lien:', error);
-    showNotification('Erreur lors de l\'ouverture du lien', 'error');
-  }
-}
-
-// Demander une URL à l'utilisateur
-function promptForURL(id) {
-  showURLModal(id, '', 'Ajouter un lien vers le RP');
-}
-
-// Créer une modal pour la saisie d'URL
-function showURLModal(id, currentUrl = '', title = 'Modifier le lien du RP') {
-  // Supprimer la modal existante s'il y en a une
-  const existingModal = document.querySelector('.url-modal');
-  if (existingModal) {
-    existingModal.remove();
-  }
-  
-  const modal = document.createElement('div');
-  modal.className = 'url-modal';
-  modal.innerHTML = `
-    <div class="url-modal-backdrop"></div>
-    <div class="url-modal-content">
-      <h3>${title}</h3>
-      <div class="url-input-group">
-        <label for="url-input">URL du RP :</label>
-        <input type="url" id="url-input" placeholder="https://example.com/rp..." value="${currentUrl}" autofocus>
-      </div>
-      <div class="url-modal-actions">
-        <button type="button" class="btn btn-secondary" id="cancel-url">Annuler</button>
-        <button type="button" class="btn btn-primary" id="save-url">Enregistrer</button>
-      </div>
-    </div>
-  `;
-  
-  document.body.appendChild(modal);
-  
-  // Focus sur l'input
-  const urlInput = modal.querySelector('#url-input');
-  setTimeout(() => urlInput.focus(), 100);
-  
-  // Événements
-  modal.querySelector('#cancel-url').addEventListener('click', () => {
-    modal.remove();
-  });
-  
-  modal.querySelector('#save-url').addEventListener('click', () => {
-    const url = urlInput.value.trim();
-    if (url) {
-      updateRPURL(id, url);
-    }
-    modal.remove();
-  });
-  
-  // Fermer avec Escape
-  document.addEventListener('keydown', function handleEscape(e) {
-    if (e.key === 'Escape') {
-      modal.remove();
-      document.removeEventListener('keydown', handleEscape);
-    }
-  });
-  
-  // Enregistrer avec Enter
-  urlInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      const url = urlInput.value.trim();
-      if (url) {
-        updateRPURL(id, url);
-      }
-      modal.remove();
-    }
-  });
-  
-  // Fermer en cliquant sur le backdrop
-  modal.querySelector('.url-modal-backdrop').addEventListener('click', () => {
-    modal.remove();
-  });
-}
-
-// Mettre à jour l'URL d'un RP
-function updateRPURL(id, url) {
-  const rpIndex = rpList.findIndex(rp => rp.id === id);
-  if (rpIndex !== -1) {
-    rpList[rpIndex].url = url;
-    saveList();
-    updateCurrentView();
-    showNotification('Lien du RP ajouté avec succès !', 'success');
-  }
-}
-
-// Afficher le menu contextuel pour le lien
-function showLinkContextMenu(id, url, x, y) {
-  // Supprimer le menu existant s'il y en a un
-  const existingMenu = document.querySelector('.link-context-menu');
-  if (existingMenu) {
-    existingMenu.remove();
-  }
-  
-  const menu = document.createElement('div');
-  menu.className = 'link-context-menu';
-  menu.style.position = 'fixed';
-  menu.style.left = x + 'px';
-  menu.style.top = y + 'px';
-  menu.style.zIndex = '1000';
-  
-  let menuItems = '';
-  
-  if (url && url.trim() !== '') {
-    menuItems = `
-      <div class="menu-item" data-action="open">🔗 Ouvrir le lien</div>
-      <div class="menu-item" data-action="edit">✏️ Modifier l'URL</div>
-      <div class="menu-item" data-action="remove">🗑️ Supprimer le lien</div>
-    `;
-  } else {
-    menuItems = `
-      <div class="menu-item" data-action="add">➕ Ajouter un lien</div>
-    `;
-  }
-  
-  menu.innerHTML = menuItems;
-  document.body.appendChild(menu);
-  
-  // Ajouter les événements aux éléments du menu
-  menu.querySelectorAll('.menu-item').forEach(item => {
-    item.addEventListener('click', () => {
-      const action = item.dataset.action;
-      
-      switch (action) {
-        case 'open':
-          openRPLink(url);
-          break;
-        case 'edit':
-          editRPURL(id, url);
-          break;
-        case 'remove':
-          removeRPURL(id);
-          break;
-        case 'add':
-          promptForURL(id);
-          break;
-      }
-      
-      menu.remove();
-    });
-  });
-  
-  // Fermer le menu en cliquant ailleurs
-  setTimeout(() => {
-    document.addEventListener('click', function closeMenu() {
-      menu.remove();
-      document.removeEventListener('click', closeMenu);
-    });
-  }, 100);
-}
-
-// Éditer l'URL d'un RP
-function editRPURL(id, currentUrl) {
-  showURLModal(id, currentUrl, 'Modifier le lien du RP');
-}
-
-// Supprimer l'URL d'un RP
-function removeRPURL(id) {
-  if (confirm('Voulez-vous vraiment supprimer le lien de ce RP ?')) {
-    const rpIndex = rpList.findIndex(rp => rp.id === id);
-    if (rpIndex !== -1) {
-      rpList[rpIndex].url = '';
-      saveList();
-      updateCurrentView();
-      showNotification('Lien du RP supprimé', 'success');
-    }
-  }
-}
-
-// Variables pour le drag & drop
-let draggedElement = null;
-let customOrder = []; // Stocker l'ordre personnalisé des cartes
-
-// Fonctions de gestion du drag & drop
-function handleDragStart(e) {
-  draggedElement = this;
-  this.style.opacity = '0.5';
-  e.dataTransfer.effectAllowed = 'move';
-  e.dataTransfer.setData('text/html', this.outerHTML);
-}
-
-function handleDragEnter(e) {
-  this.classList.add('drag-over');
-}
-
-function handleDragOver(e) {
-  if (e.preventDefault) {
-    e.preventDefault();
-  }
-  e.dataTransfer.dropEffect = 'move';
-  return false;
-}
-
-function handleDragLeave(e) {
-  this.classList.remove('drag-over');
-}
-
-function handleDrop(e) {
-  if (e.stopPropagation) {
-    e.stopPropagation();
-  }
-  
-  if (draggedElement !== this) {
-    const container = this.parentNode;
-    const draggedIndex = Array.from(container.children).indexOf(draggedElement);
-    const targetIndex = Array.from(container.children).indexOf(this);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
     
-    if (draggedIndex < targetIndex) {
-      container.insertBefore(draggedElement, this.nextSibling);
+    let timeStr = '';
+    let className = 'time-normal';
+    
+    if (diffDays > 0) {
+        timeStr = `Il y a ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
+        if (diffDays >= 7) className = 'time-urgent';
+        else if (diffDays >= 3) className = 'time-warning';
+    } else if (diffHours > 0) {
+        timeStr = `Il y a ${diffHours} heure${diffHours > 1 ? 's' : ''}`;
+    } else if (diffMinutes > 0) {
+        timeStr = `Il y a ${diffMinutes} minute${diffMinutes > 1 ? 's' : ''}`;
     } else {
-      container.insertBefore(draggedElement, this);
+        timeStr = 'À l\'instant';
     }
     
-    // Sauvegarder le nouvel ordre
-    saveCustomOrder();
-  }
-  
-  this.classList.remove('drag-over');
-  return false;
+    return { timeStr, className };
 }
 
-function handleDragEnd(e) {
-  this.style.opacity = '';
-  
-  // Nettoyer les classes drag-over de tous les éléments
-  const cards = document.querySelectorAll('.rp-card');
-  cards.forEach(card => card.classList.remove('drag-over'));
-}
-
-function saveCustomOrder() {
-  const activeContainer = document.getElementById('cards-view');
-  const archiveContainer = document.getElementById('cards-view-archive');
-  
-  // Sauvegarder l'ordre des cartes actives
-  const activeCards = Array.from(activeContainer.children);
-  const activeOrder = activeCards.map(card => card.dataset.id);
-  
-  // Sauvegarder l'ordre des cartes archivées
-  const archiveCards = Array.from(archiveContainer.children);
-  const archiveOrder = archiveCards.map(card => card.dataset.id);
-  
-  customOrder = {
-    active: activeOrder,
-    archive: archiveOrder
-  };
-  
-  localStorage.setItem('customOrder', JSON.stringify(customOrder));
-}
-
-function loadCustomOrder() {
-  const saved = localStorage.getItem('customOrder');
-  if (saved) {
-    try {
-      customOrder = JSON.parse(saved);
-    } catch (error) {
-      console.error('Erreur lors du chargement de l\'ordre personnalisé:', error);
-      customOrder = { active: [], archive: [] };
+// Créer une carte pour un RP
+function createCard(item) {
+    const { timeStr, className } = getTimeDisplay(item.date);
+    
+    let statusClass = '';
+    let statusText = '';
+    
+    if (item.turn === "À ton partenaire de poster") {
+        statusClass = 'turn-partner';
+        statusText = 'En attente de votre partenaire';
+    } else if (item.turn === "À toi de poster") {
+        statusClass = 'turn-you';
+        statusText = 'À vous de poster';
+    } else if (item.turn === "RP terminé") {
+        statusClass = 'turn-completed';
+        statusText = 'RP terminé';
+    } else if (item.turn === "RP abandonné") {
+        statusClass = 'turn-abandoned';
+        statusText = 'RP abandonné';
     }
-  } else {
-    customOrder = { active: [], archive: [] };
-  }
+
+    const card = document.createElement('div');
+    card.className = 'rp-card';
+    card.dataset.id = item.id;
+    card.innerHTML = `
+        <div class="card-header ${statusClass}">
+            <div class="card-title-container">
+                <h3 class="card-title">${item.rp}</h3>
+                <span class="link-icon ${item.url ? 'has-url' : 'no-url'}" data-id="${item.id}">🔗</span>
+            </div>
+            <div class="card-status ${statusClass}">
+                <span>${statusText}</span>
+            </div>
+        </div>
+        
+        <div class="card-body">
+            <div class="card-info">
+                <div class="info-item">
+                    <span class="info-label">Partenaire</span>
+                    <span class="info-value">${item.partner}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Lieu</span>
+                    <span class="info-value ${!item.location ? 'empty' : ''}">${item.location || 'Non spécifié'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Type</span>
+                    <span class="info-value ${!item.type ? 'empty' : ''}">${item.type || 'Non spécifié'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Univers</span>
+                    <span class="info-value ${!item.universe ? 'empty' : ''}">${item.universe || 'Non spécifié'}</span>
+                </div>
+            </div>
+            
+            <div class="card-time">
+                <span class="time-icon">🕘</span>
+                <span class="time-text ${className}">${timeStr}</span>
+            </div>
+            
+            <div class="card-actions">
+                <button class="btn btn-secondary btn-sm edit-btn" data-id="${item.id}" title="Modifier">
+                    <img src="icone/stylo-a-plume.png" alt="Modifier" class="btn-icon"> Modifier
+                </button>
+                <button class="btn btn-danger btn-sm delete-btn" data-id="${item.id}" title="Supprimer">
+                    🗑️ Supprimer
+                </button>
+            </div>
+        </div>
+    `;
+    
+    return card;
 }
 
+// Mettre à jour l'affichage des cartes actives
+function updateActiveCards() {
+    const cardsView = document.getElementById('cards-view');
+    const cardsEmptyState = document.getElementById('cards-empty-state');
+    
+    if (!cardsView) return;
+    
+    cardsView.innerHTML = '';
+    const activeRPs = getActiveRPs();
+    
+    if (activeRPs.length === 0) {
+        cardsView.style.display = 'none';
+        if (cardsEmptyState) {
+            cardsEmptyState.style.display = 'block';
+            cardsEmptyState.innerHTML = `
+                <h3>Aucun RP actif</h3>
+                <p>Ajoutez votre premier RP pour commencer le suivi !</p>
+            `;
+        }
+        return;
+    }
+    
+    cardsView.style.display = 'grid';
+    if (cardsEmptyState) cardsEmptyState.style.display = 'none';
+    
+    let filteredList = activeRPs;
+    
+    // Appliquer les filtres
+    if (searchQuery.trim() !== '') {
+        filteredList = filteredList.filter(item => 
+            item.rp.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.partner.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (item.location && item.location.toLowerCase().includes(searchQuery.toLowerCase())) ||
+            (item.type && item.type.toLowerCase().includes(searchQuery.toLowerCase())) ||
+            (item.universe && item.universe.toLowerCase().includes(searchQuery.toLowerCase()))
+        );
+    }
+    
+    if (currentFilter !== 'all') {
+        filteredList = filteredList.filter(item => item.turn === currentFilter);
+    }
+    
+    // Trier
+    if (currentSort === 'partner-asc') {
+        filteredList.sort((a, b) => a.partner.localeCompare(b.partner));
+    } else if (currentSort === 'partner-desc') {
+        filteredList.sort((a, b) => b.partner.localeCompare(a.partner));
+    } else if (currentSort === 'time-asc') {
+        filteredList.sort((a, b) => a.date - b.date);
+    } else if (currentSort === 'time-desc') {
+        filteredList.sort((a, b) => b.date - a.date);
+    }
+    
+    filteredList.forEach((item) => {
+        const card = createCard(item);
+        cardsView.appendChild(card);
+    });
+    
+    attachCardEvents();
+}
+
+// Mettre à jour l'affichage des cartes archivées
+function updateArchiveCards() {
+    const cardsViewArchive = document.getElementById('cards-view-archive');
+    const cardsEmptyStateArchive = document.getElementById('cards-empty-state-archive');
+    
+    if (!cardsViewArchive) return;
+    
+    cardsViewArchive.innerHTML = '';
+    const archivedRPs = getArchivedRPs();
+    
+    if (archivedRPs.length === 0) {
+        cardsViewArchive.style.display = 'none';
+        if (cardsEmptyStateArchive) {
+            cardsEmptyStateArchive.style.display = 'block';
+            cardsEmptyStateArchive.innerHTML = `
+                <h3>Aucun RP archivé</h3>
+                <p>Les RPs terminés ou abandonnés apparaîtront ici.</p>
+            `;
+        }
+        return;
+    }
+    
+    cardsViewArchive.style.display = 'grid';
+    if (cardsEmptyStateArchive) cardsEmptyStateArchive.style.display = 'none';
+    
+    let filteredList = archivedRPs;
+    
+    // Appliquer les filtres
+    if (searchQuery.trim() !== '') {
+        filteredList = filteredList.filter(item => 
+            item.rp.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.partner.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (item.location && item.location.toLowerCase().includes(searchQuery.toLowerCase())) ||
+            (item.type && item.type.toLowerCase().includes(searchQuery.toLowerCase())) ||
+            (item.universe && item.universe.toLowerCase().includes(searchQuery.toLowerCase()))
+        );
+    }
+    
+    if (currentFilterArchive !== 'all') {
+        filteredList = filteredList.filter(item => item.turn === currentFilterArchive);
+    }
+    
+    // Trier
+    if (currentSortArchive === 'partner-asc') {
+        filteredList.sort((a, b) => a.partner.localeCompare(b.partner));
+    } else if (currentSortArchive === 'partner-desc') {
+        filteredList.sort((a, b) => b.partner.localeCompare(a.partner));
+    } else if (currentSortArchive === 'time-asc') {
+        filteredList.sort((a, b) => a.date - b.date);
+    } else if (currentSortArchive === 'time-desc') {
+        filteredList.sort((a, b) => b.date - a.date);
+    }
+    
+    filteredList.forEach((item) => {
+        const card = createCard(item);
+        cardsViewArchive.appendChild(card);
+    });
+    
+    attachCardEventsArchive();
+}
+
+// Attacher les événements aux cartes
+function attachCardEvents() {
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            if (confirm('Êtes-vous sûr de vouloir supprimer ce RP ?')) {
+                const id = e.target.closest('button').getAttribute('data-id');
+                const idx = rpList.findIndex(item => item.id == id);
+                if (idx !== -1) {
+                    const rpName = rpList[idx].rp;
+                    rpList.splice(idx, 1);
+                    try {
+                        await saveData();
+                        updateCurrentView();
+                        showNotification(`RP "${rpName}" supprimé avec succès !`);
+                    } catch (error) {
+                        showNotification('Erreur lors de la suppression', 'error');
+                    }
+                }
+            }
+        });
+    });
+
+    document.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const id = e.target.closest('button').getAttribute('data-id');
+            const item = rpList.find(item => item.id == id);
+            if (item) {
+                document.getElementById('rpName').value = item.rp;
+                document.getElementById('partnerName').value = item.partner;
+                document.getElementById('rpLocation').value = item.location || '';
+                document.getElementById('rpType').value = item.type || '';
+                document.getElementById('rpUniverse').value = item.universe || '';
+                document.getElementById('rpUrl').value = item.url || '';
+                document.getElementById('turn').value = item.turn;
+                
+                rpList.splice(rpList.findIndex(r => r.id == id), 1);
+                updateCurrentView();
+                showNotification('RP prêt à être modifié !');
+            }
+        });
+    });
+}
+
+// Attacher les événements aux cartes archivées
+function attachCardEventsArchive() {
+    const cardsViewArchive = document.getElementById('cards-view-archive');
+    if (!cardsViewArchive) return;
+
+    cardsViewArchive.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const id = e.target.closest('button').getAttribute('data-id');
+            const item = rpList.find(item => item.id == id);
+            if (item) {
+                document.getElementById('rpName').value = item.rp;
+                document.getElementById('partnerName').value = item.partner;
+                document.getElementById('rpLocation').value = item.location || '';
+                document.getElementById('rpType').value = item.type || '';
+                document.getElementById('rpUniverse').value = item.universe || '';
+                document.getElementById('rpUrl').value = item.url || '';
+                document.getElementById('turn').value = item.turn;
+                
+                rpList.splice(rpList.findIndex(r => r.id == id), 1);
+                updateCurrentView();
+                showNotification('RP prêt à être modifié !');
+            }
+        });
+    });
+
+    cardsViewArchive.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            if (confirm('Êtes-vous sûr de vouloir supprimer ce RP ?')) {
+                const id = e.target.closest('button').getAttribute('data-id');
+                const idx = rpList.findIndex(item => item.id == id);
+                if (idx !== -1) {
+                    const rpName = rpList[idx].rp;
+                    rpList.splice(idx, 1);
+                    try {
+                        await saveData();
+                        updateCurrentView();
+                        showNotification(`RP "${rpName}" supprimé avec succès !`);
+                    } catch (error) {
+                        showNotification('Erreur lors de la suppression', 'error');
+                    }
+                }
+            }
+        });
+    });
+}
+
+// Navigation entre les pages
+function switchPage(page) {
+    currentPage = page;
+    
+    const pageActive = document.getElementById('page-active');
+    const pageArchive = document.getElementById('page-archive');
+    const controlsActive = document.getElementById('controls-active');
+    const controlsArchive = document.getElementById('controls-archive');
+    const navActive = document.getElementById('nav-active');
+    const navArchive = document.getElementById('nav-archive');
+    
+    if (page === 'active') {
+        if (pageActive) pageActive.style.display = 'block';
+        if (pageArchive) pageArchive.style.display = 'none';
+        if (controlsActive) controlsActive.style.display = 'flex';
+        if (controlsArchive) controlsArchive.style.display = 'none';
+        if (navActive) navActive.classList.add('active');
+        if (navArchive) navArchive.classList.remove('active');
+        updateActiveCards();
+    } else {
+        if (pageActive) pageActive.style.display = 'none';
+        if (pageArchive) pageArchive.style.display = 'block';
+        if (controlsActive) controlsActive.style.display = 'none';
+        if (controlsArchive) controlsArchive.style.display = 'flex';
+        if (navActive) navActive.classList.remove('active');
+        if (navArchive) navArchive.classList.add('active');
+        updateArchiveCards();
+    }
+}
+
+// Fonction utilitaire pour mettre à jour l'affichage selon la page courante
+function updateCurrentView() {
+    if (currentPage === 'active') {
+        updateActiveCards();
+    } else {
+        updateArchiveCards();
+    }
+}
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', async function() {
+    console.log('Renderer chargé');
+    
+    // Attendre que l'utilisateur soit connecté
+    const waitForAuth = () => {
+        return new Promise((resolve) => {
+            const checkAuth = () => {
+                if (window.currentUser && sessionStorage.getItem('user_id')) {
+                    resolve();
+                } else {
+                    setTimeout(checkAuth, 500);
+                }
+            };
+            checkAuth();
+        });
+    };
+    
+    // Gestionnaire de soumission du formulaire
+    const rpForm = document.getElementById('rpForm');
+    if (rpForm) {
+        rpForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            // Vérifier si l'utilisateur est connecté
+            if (!window.currentUser || !sessionStorage.getItem('user_id')) {
+                alert('Veuillez vous connecter pour ajouter un RP');
+                return;
+            }
+
+            const rpName = document.getElementById('rpName').value.trim();
+            const partnerName = document.getElementById('partnerName').value.trim();
+            const location = document.getElementById('rpLocation').value.trim();
+            const type = document.getElementById('rpType').value.trim();
+            const universe = document.getElementById('rpUniverse').value.trim();
+            const url = document.getElementById('rpUrl').value.trim();
+            const turn = document.getElementById('turn').value;
+
+            if (rpName && partnerName && turn) {
+                const newRP = {
+                    id: Date.now() + Math.random(),
+                    rp: rpName,
+                    partner: partnerName,
+                    location: location || '',
+                    type: type || '',
+                    universe: universe || '',
+                    url: url || '',
+                    turn: turn,
+                    date: new Date()
+                };
+
+                rpList.push(newRP);
+                
+                try {
+                    await saveData();
+                    updateCurrentView();
+                    rpForm.reset();
+                    showNotification(`RP "${rpName}" ajouté avec succès !`);
+                } catch (error) {
+                    console.error('Erreur lors de la sauvegarde:', error);
+                    showNotification('Erreur lors de la sauvegarde du RP', 'error');
+                }
+            }
+        });
+    }
+
+    // Gestion des filtres et tri pour les cartes actives
+    const viewFilter = document.getElementById('view-filter');
+    if (viewFilter) {
+        viewFilter.addEventListener('change', () => {
+            currentFilter = viewFilter.value;
+            updateCurrentView();
+        });
+    }
+
+    const sortSelect = document.getElementById('sort-select');
+    if (sortSelect) {
+        sortSelect.addEventListener('change', () => {
+            currentSort = sortSelect.value;
+            updateCurrentView();
+        });
+    }
+
+    // Gestion des filtres et tri pour les cartes archivées
+    const viewFilterArchive = document.getElementById('view-filter-archive');
+    if (viewFilterArchive) {
+        viewFilterArchive.addEventListener('change', () => {
+            currentFilterArchive = viewFilterArchive.value;
+            updateCurrentView();
+        });
+    }
+
+    const sortSelectArchive = document.getElementById('sort-select-archive');
+    if (sortSelectArchive) {
+        sortSelectArchive.addEventListener('change', () => {
+            currentSortArchive = sortSelectArchive.value;
+            updateCurrentView();
+        });
+    }
+
+    // Gestion de la recherche
+    const searchInput = document.getElementById('search-input');
+    const clearSearchBtn = document.getElementById('clear-search');
+
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            searchQuery = e.target.value;
+            
+            if (clearSearchBtn) {
+                if (searchQuery.trim() !== '') {
+                    clearSearchBtn.style.display = 'block';
+                } else {
+                    clearSearchBtn.style.display = 'none';
+                }
+            }
+            
+            updateCurrentView();
+        });
+    }
+
+    if (clearSearchBtn) {
+        clearSearchBtn.addEventListener('click', () => {
+            if (searchInput) searchInput.value = '';
+            searchQuery = '';
+            clearSearchBtn.style.display = 'none';
+            updateCurrentView();
+            if (searchInput) searchInput.focus();
+        });
+    }
+
+    // Navigation
+    const navActive = document.getElementById('nav-active');
+    const navArchive = document.getElementById('nav-archive');
+    
+    if (navActive) navActive.addEventListener('click', () => switchPage('active'));
+    if (navArchive) navArchive.addEventListener('click', () => switchPage('archive'));
+
+    // Attendre la connexion et charger les données
+    try {
+        await waitForAuth();
+        await loadData();
+        switchPage('active');
+        console.log('🚀 RP Tracker initialisé avec succès');
+    } catch (error) {
+        console.error('Erreur lors de l\'initialisation:', error);
+        switchPage('active');
+    }
+});
 function applyCustomOrder(items, type) {
   if (!customOrder || !customOrder[type] || customOrder[type].length === 0) {
     return items; // Retourner l'ordre original si pas d'ordre personnalisé
