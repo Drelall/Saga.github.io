@@ -22,14 +22,61 @@ window.handleCredentialResponse = function(response) {
         sessionStorage.setItem('user_email', currentUser.email);
         sessionStorage.setItem('user_id', currentUser.sub);
         
-        // Mettre à jour l'interface immédiatement
-        updateUIAfterLogin();
+        // Initialiser Google Drive API AVANT d'afficher l'interface
+        initGoogleDriveAPI().then(() => {
+            updateUIAfterLogin();
+        }).catch(error => {
+            console.error('❌ Erreur Google Drive API:', error);
+            updateUIAfterLogin(); // Continuer même si Drive échoue
+        });
         
     } catch (error) {
         console.error('❌ Erreur traitement connexion:', error);
         alert('Erreur lors de la connexion');
     }
 };
+
+// Initialiser Google Drive API
+async function initGoogleDriveAPI() {
+    try {
+        console.log('🔧 Initialisation Google Drive API...');
+        
+        // Attendre que gapi soit disponible
+        if (!window.gapi) {
+            throw new Error('GAPI non disponible');
+        }
+        
+        // Charger les modules nécessaires
+        await new Promise((resolve, reject) => {
+            gapi.load('client:auth2', {
+                callback: resolve,
+                onerror: reject
+            });
+        });
+
+        // Initialiser le client avec les permissions Drive
+        await gapi.client.init({
+            clientId: GOOGLE_CLIENT_ID,
+            scope: 'https://www.googleapis.com/auth/drive.appdata',
+            discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
+        });
+
+        // Obtenir l'autorisation Drive si nécessaire
+        const authInstance = gapi.auth2.getAuthInstance();
+        if (!authInstance.isSignedIn.get()) {
+            await authInstance.signIn({
+                scope: 'https://www.googleapis.com/auth/drive.appdata'
+            });
+        }
+
+        console.log('✅ Google Drive API initialisée');
+        window.gapi = gapi; // Rendre accessible globalement
+        
+    } catch (error) {
+        console.error('❌ Erreur Google Drive API:', error);
+        throw error;
+    }
+}
 
 // Fonction pour mettre à jour l'interface après connexion
 function updateUIAfterLogin() {
@@ -124,7 +171,13 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         window.currentUser = currentUser;
         
-        updateUIAfterLogin();
+        // Réinitialiser Google Drive pour la session existante
+        initGoogleDriveAPI().then(() => {
+            updateUIAfterLogin();
+        }).catch(error => {
+            console.error('❌ Erreur restauration Drive:', error);
+            updateUIAfterLogin();
+        });
     } else {
         console.log('ℹ️ Aucune session, écran d\'accueil');
     }

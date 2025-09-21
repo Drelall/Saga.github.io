@@ -256,16 +256,16 @@ function attachCardEvents() {
     });
 }
 
-// Attendre connexion utilisateur
+// Attendre connexion utilisateur ET API Google Drive
 function waitForAuth() {
     return new Promise((resolve) => {
         const check = () => {
-            if (window.currentUser && sessionStorage.getItem('user_id')) {
-                console.log('✅ Utilisateur connecté, prêt');
+            if (window.currentUser && sessionStorage.getItem('user_id') && window.gapi && window.gapi.client) {
+                console.log('✅ Utilisateur connecté et API prête');
                 resolve();
             } else {
-                console.log('⏳ Attente connexion...');
-                setTimeout(check, 500);
+                console.log('⏳ Attente connexion et API...');
+                setTimeout(check, 1000);
             }
         };
         check();
@@ -345,7 +345,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    // Attendre connexion et charger données
+    // Attendre connexion ET API Google Drive
     try {
         await waitForAuth();
         await loadData();
