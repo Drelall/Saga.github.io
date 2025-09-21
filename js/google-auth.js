@@ -4,7 +4,9 @@ const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/drive.appdata';
 
 // Variables globales
 let currentUser = null;
-let gapi;
+
+// Exposer currentUser globalement
+window.currentUser = currentUser;
 
 // Fonction appelée par Google après connexion réussie
 window.handleCredentialResponse = function(response) {
@@ -70,6 +72,9 @@ async function initGoogleAPI() {
 // Fonction pour mettre à jour l'interface après connexion
 function updateUIAfterLogin() {
     console.log('Mise à jour de l\'interface...');
+    
+    // Exposer currentUser globalement
+    window.currentUser = currentUser;
     
     // Masquer le bouton de connexion Google
     const googleButton = document.querySelector('.g_id_signin');
@@ -168,6 +173,9 @@ document.addEventListener('DOMContentLoaded', function() {
             email: savedEmail,
             sub: savedUserId
         };
+        
+        // Exposer currentUser globalement
+        window.currentUser = currentUser;
         
         // Mettre à jour l'interface
         updateUIAfterLogin();

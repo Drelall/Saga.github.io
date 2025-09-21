@@ -152,39 +152,100 @@ function setupAutocomplete(inputId, suggestionsId, type) {
   });
 }
 
-// Sauvegarder et charger la liste
-function saveList() {
-  localStorage.setItem('rpList', JSON.stringify(rpList));
+// Sauvegarder et charger la liste (version unifiée)
+async function saveList() {
+  try {
+    // Vérifier si l'utilisateur est connecté
+    if (window.currentUser && sessionStorage.getItem('user_id')) {
+      // Sauvegarder sur Google Drive
+      await driveStorage.saveData(rpList);
+      console.log('Données sauvegardées sur Google Drive');
+    } else {
+      // Fallback vers localStorage
+      localStorage.setItem('rpList', JSON.stringify(rpList));
+      console.log('Données sauvegardées en local');
+    }
+  } catch (error) {
+    console.error('Erreur sauvegarde:', error);
+    // Fallback vers localStorage en cas d'erreur
+    localStorage.setItem('rpList', JSON.stringify(rpList));
+  }
 }
 
-function loadList() {
-  if (localStorage.getItem('rpList')) {
-    try {
-      rpList = JSON.parse(localStorage.getItem('rpList')).map(item => {
-        // S'assurer que la date est correctement convertie
-        let itemDate = item.date;
-        if (typeof itemDate === 'string') {
-          itemDate = new Date(itemDate);
-        } else if (typeof itemDate === 'number') {
-          itemDate = new Date(itemDate);
-        } else if (!(itemDate instanceof Date)) {
-          // Si ce n'est pas une date valide, utiliser la date actuelle
-          itemDate = new Date();
-        }
-        
-        // Vérifier si la date est valide
-        if (isNaN(itemDate.getTime())) {
-          itemDate = new Date();
-        }
-        
+async function loadList() {
+  try {
+    // Vérifier si l'utilisateur est connecté
+    if (window.currentUser && sessionStorage.getItem('user_id')) {
+      // Charger depuis Google Drive
+      const data = await driveStorage.loadData();
+      rpList = data.map(item => {
+        // Convertir les données au format attendu
         return {
-          ...item,
-          date: itemDate
+          id: item.id || Date.now() + Math.random(),
+          rp: item.title || item.rp,
+          partner: item.partner,
+          location: item.location || '',
+          type: item.type || '',
+          universe: item.universe || '',
+          url: item.url || '',
+          turn: item.status || item.turn,
+          date: new Date(item.created_at || item.date || Date.now())
         };
       });
-    } catch (error) {
-      console.error('Erreur lors du chargement des données:', error);
-      rpList = [];
+      console.log(`${rpList.length} RPs chargés depuis Google Drive`);
+    } else {
+      // Charger depuis localStorage
+      if (localStorage.getItem('rpList')) {
+        rpList = JSON.parse(localStorage.getItem('rpList')).map(item => {
+          let itemDate = item.date;
+          if (typeof itemDate === 'string') {
+            itemDate = new Date(itemDate);
+          } else if (typeof itemDate === 'number') {
+            itemDate = new Date(itemDate);
+          } else if (!(itemDate instanceof Date)) {
+            itemDate = new Date();
+          }
+          
+          if (isNaN(itemDate.getTime())) {
+            itemDate = new Date();
+          }
+          
+          return {
+            ...item,
+            date: itemDate
+          };
+        });
+        console.log(`${rpList.length} RPs chargés depuis localStorage`);
+      }
+    }
+  } catch (error) {
+    console.error('Erreur chargement:', error);
+    // Fallback vers localStorage
+    if (localStorage.getItem('rpList')) {
+      try {
+        rpList = JSON.parse(localStorage.getItem('rpList')).map(item => {
+          let itemDate = item.date;
+          if (typeof itemDate === 'string') {
+            itemDate = new Date(itemDate);
+          } else if (typeof itemDate === 'number') {
+            itemDate = new Date(itemDate);
+          } else if (!(itemDate instanceof Date)) {
+            itemDate = new Date();
+          }
+          
+          if (isNaN(itemDate.getTime())) {
+            itemDate = new Date();
+          }
+          
+          return {
+            ...item,
+            date: itemDate
+          };
+        });
+      } catch (error) {
+        console.error('Erreur lors du chargement des données localStorage:', error);
+        rpList = [];
+      }
     }
   }
 }
@@ -968,49 +1029,66 @@ function showNotification(message, type = 'success') {
   }, 3000);
 }
 
-// Configuration des champs d'auto-complétion
+// Configuration des champs d'auto-complétion (version unifiée)
 document.addEventListener('DOMContentLoaded', function() {
   setupAutocomplete('partnerName', 'partnerSuggestions', 'partners');
   setupAutocomplete('rpLocation', 'locationSuggestions', 'locations');
   setupAutocomplete('rpType', 'typeSuggestions', 'types');
   setupAutocomplete('rpUniverse', 'universeSuggestions', 'universes');
   
-  // Gestionnaire de soumission du formulaire
-  rpForm.addEventListener('submit', async function(e) {
-    e.preventDefault();
+  // Gestionnaire de soumission du formulaire unifié
+  const rpForm = document.getElementById('rpForm');
+  if (rpForm) {
+    rpForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
 
-    const rpName = document.getElementById('rpName').value.trim();
-    const partnerName = document.getElementById('partnerName').value.trim();
-    const location = document.getElementById('rpLocation').value.trim();
-    const type = document.getElementById('rpType').value.trim();
-    const universe = document.getElementById('rpUniverse').value.trim();
-    const url = document.getElementById('rpUrl').value.trim();
-    const turn = document.getElementById('turn').value;
+      const rpName = document.getElementById('rpName').value.trim();
+      const partnerName = document.getElementById('partnerName').value.trim();
+      const location = document.getElementById('rpLocation').value.trim();
+      const type = document.getElementById('rpType').value.trim();
+      const universe = document.getElementById('rpUniverse').value.trim();
+      const url = document.getElementById('rpUrl').value.trim();
+      const turn = document.getElementById('turn').value;
 
-    if (rpName && partnerName && turn) {
-      // Ajouter aux suggestions
-      addSuggestion('partners', partnerName);
-      if (location) addSuggestion('locations', location);
-      if (type) addSuggestion('types', type);
-      if (universe) addSuggestion('universes', universe);
+      if (rpName && partnerName && turn) {
+        // Vérifier si l'utilisateur est connecté pour Google Drive
+        if (!window.currentUser || !sessionStorage.getItem('user_id')) {
+          // Si pas connecté, utiliser le système local
+          console.log('Utilisateur non connecté, utilisation du système local');
+        }
 
-      rpList.push({
-        id: Date.now() + Math.random(),
-        rp: rpName,
-        partner: partnerName,
-        location: location || '',
-        type: type || '',
-        universe: universe || '',
-        url: url || '',
-        turn: turn,
-        date: new Date()
-      });
-      saveList();
-      updateCurrentView();
-      rpForm.reset();
-      showNotification(`RP "${rpName}" ajouté avec succès !`);
-    }
-  });
+        // Ajouter aux suggestions
+        addSuggestion('partners', partnerName);
+        if (location) addSuggestion('locations', location);
+        if (type) addSuggestion('types', type);
+        if (universe) addSuggestion('universes', universe);
+
+        const newRP = {
+          id: Date.now() + Math.random(),
+          rp: rpName,
+          partner: partnerName,
+          location: location || '',
+          type: type || '',
+          universe: universe || '',
+          url: url || '',
+          turn: turn,
+          date: new Date()
+        };
+
+        rpList.push(newRP);
+        
+        try {
+          await saveList();
+          updateCurrentView();
+          rpForm.reset();
+          showNotification(`RP "${rpName}" ajouté avec succès !`);
+        } catch (error) {
+          console.error('Erreur lors de la sauvegarde:', error);
+          showNotification('Erreur lors de la sauvegarde du RP', 'error');
+        }
+      }
+    });
+  }
 
   // Gestion du filtre
   viewFilter.addEventListener('change', () => {
@@ -1125,13 +1203,11 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   // Charger les données au démarrage
-  loadList();
-  loadCustomOrder();
-  
-  // Initialiser l'affichage des cartes actives
-  switchPage('active');
-  
-  console.log('🚀 RP Tracker initialisé avec succès (Vue cartes uniquement)');
+  loadList().then(() => {
+    loadCustomOrder();
+    switchPage('active');
+    console.log('🚀 RP Tracker initialisé avec succès');
+  });
 });
 
 // Filtrer les RPs selon le type (actifs vs archivés)
