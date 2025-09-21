@@ -7,24 +7,26 @@ window.currentUser = null;
 
 // Fonction GSI simple qui marche
 window.handleCredentialResponse = function(response) {
-    console.log('🔐 Connexion Google réussie !');
-    
+    console.log('🔐 Connexion Google reçue');
     try {
-        // Décoder le token JWT
-        const payload = JSON.parse(atob(response.credential.split('.')[1]));
+        if (!response || !response.credential) {
+            console.error('⚠️ Réponse GSI invalide');
+            return;
+        }
+        const parts = response.credential.split('.');
+        if (parts.length < 2) {
+            console.error('⚠️ JWT mal formé');
+            return;
+        }
+        const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
         currentUser = payload;
         window.currentUser = currentUser;
-        
         console.log('👤 Utilisateur connecté:', currentUser.email);
-        
-        // Stocker les informations
         sessionStorage.setItem('user_email', currentUser.email);
         sessionStorage.setItem('user_id', currentUser.sub);
         sessionStorage.setItem('user_name', currentUser.name || currentUser.email);
-        
-        // Afficher l'application DIRECTEMENT
         updateUIAfterLogin();
-        
+        runHealthCheck({ afterLogin:true });
     } catch (error) {
         console.error('❌ Erreur connexion:', error);
         alert('Erreur lors de la connexion');
@@ -106,32 +108,58 @@ function handleLogout() {
     window.location.reload();
 }
 
+// Auto-diagnostic basique
+function runHealthCheck(context = {}) {
+    const result = {
+        contexte: context,
+        clientIdOK: GOOGLE_CLIENT_ID && GOOGLE_CLIENT_ID.includes('.apps.googleusercontent.com'),
+        userSessionOK: !!sessionStorage.getItem('user_id'),
+        dom: {
+            welcomeScreen: !!document.getElementById('welcome-screen'),
+            formContainer: !!document.querySelector('.container'),
+            logoutButton: !!document.getElementById('logout-button')
+        },
+        etatAffichage: {
+            appVisible: document.querySelector('.container')?.style.display !== 'none',
+            menubarVisible: document.querySelector('.menubar')?.style.display !== 'none'
+        },
+        horodatage: new Date().toISOString()
+    };
+    console.log('🩺 HEALTH CHECK ▶', result);
+    return result;
+}
+
 // Initialisation ULTRA SIMPLE
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🔧 Initialisation...');
-    
-    // Vérifier session existante
+    // Empêcher double init
+    if (window.__AUTH_INIT_DONE__) {
+        console.log('⏭️ Initialisation déjà effectuée');
+        return;
+    }
+    window.__AUTH_INIT_DONE__ = true;
+
     const savedEmail = sessionStorage.getItem('user_email');
     const savedUserId = sessionStorage.getItem('user_id');
-    
+
     if (savedEmail && savedUserId) {
         console.log('🔍 Session trouvée:', savedEmail);
-        
         currentUser = {
             email: savedEmail,
             sub: savedUserId,
             name: sessionStorage.getItem('user_name') || savedEmail
         };
         window.currentUser = currentUser;
-        
         updateUIAfterLogin();
+        runHealthCheck({ restoredSession:true });
+    } else {
+        runHealthCheck({ noSession:true });
     }
-    
-    // Bouton déconnexion
+
     const logoutButton = document.getElementById('logout-button');
     if (logoutButton) {
         logoutButton.addEventListener('click', handleLogout);
     }
-    
+
     console.log('✅ Prêt');
 });
