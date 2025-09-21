@@ -14,11 +14,12 @@ async function loadData() {
     rpList = await storage.loadData();
 }
 
-function showNotification(message) {
+function showNotification(message, type = 'success') {
     const div = document.createElement('div');
     div.textContent = message;
     div.style.cssText = `
-        position: fixed; top: 20px; right: 20px; background: #4CAF50; 
+        position: fixed; top: 20px; right: 20px; 
+        background: ${type === 'success' ? '#4CAF50' : '#ff9800'}; 
         color: white; padding: 15px; border-radius: 5px; z-index: 1000;
     `;
     document.body.appendChild(div);
@@ -108,16 +109,24 @@ document.addEventListener('DOMContentLoaded', async function() {
             };
 
             rpList.push(newRP);
+            
+            // Sauvegarder avec indication
+            showNotification('Sauvegarde en cours...', 'info');
             await saveData();
             updateCards();
             rpForm.reset();
-            showNotification('RP ajouté !');
+            showNotification('RP ajouté et synchronisé !');
         });
     }
     
-    // Charger données
+    // Charger données avec indication
+    showNotification('Chargement des données...', 'info');
     await loadData();
     updateCards();
+    
+    if (rpList.length > 0) {
+        showNotification(`${rpList.length} RPs chargés`);
+    }
     
     console.log('✅ Ready');
 });
