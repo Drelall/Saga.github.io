@@ -1,238 +1,180 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>RP Tracker</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="style.css">
-  
-  <!-- Scripts Google basiques -->
-  <script src="https://accounts.google.com/gsi/client" async></script>
-  
-  <!-- Ajouts pour PWA -->
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#111111">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <link rel="apple-touch-icon" href="assets/icons/plume-192.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saga</title>
+    <link rel="icon" type="image/png" href="./images/stylo-a-plume.png">
+    <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-  <header>
-    <div class="titre">
-      <h1>RP Tracker</h1>
-    </div>
-    <div class="auth-section">
-      <div id="g_id_onload"
-           data-client_id="239325905492-tu5l9oblsjjq1s3gii35juauscc2qrph.apps.googleusercontent.com"
-           data-callback="handleCredentialResponse"
-           data-auto_prompt="false">
-      </div>
-      <div class="google-signin-wrapper">
-        <div class="g_id_signin"
-             data-type="standard"
-             data-size="large"
-             data-theme="outline"
-             data-text="sign_in_with"
-             data-shape="rectangular"
-             data-logo_alignment="left">
+    <!-- ...existing code... -->
+    <header class="header-booki">
+        <div class="logo">
+            <img src="./images/stylo-a-plume.png" alt="Logo " height="60">
         </div>
-      </div>
-      <div id="auth-logged-in" style="display: none;">
-        <button id="logout-button" class="btn btn-danger">Déconnexion</button>
-      </div>
-    </div>
-  </header>
 
-  <!-- Écran d'accueil -->
-  <div id="welcome-screen" class="welcome-screen">
-    <div class="welcome-content">
-      <h1>Bienvenue sur RP Tracker</h1>
-      <p>Connectez-vous avec Google pour commencer à gérer vos RPs</p>
-    </div>
-  </div>
+        <div class="nav-zone">
+            <nav class="nav-booki">
+                <div class="dropdown">
+                    <a href="#articles" class="dropdown-toggle" title="Les articles">
+                        <img src="./images/journal.png" alt="Journal" width="36" height="36" style="vertical-align:middle;">
+                        <span style="margin-left: 8px;">Les articles</span>
+                    </a>
+                    <div class="dropdown-menu">
+                        <a href="./lesarticles/worldofwarcraft.html">World of Warcraft</a>
+                    </div>
+                </div>
 
-  <!-- Barre de menu -->
-  <nav class="menubar" style="display: none;">
-    <div class="menubar-left">
-      <div class="menu-item">
-        <button class="menu-button" id="fichier-menu">Fichier</button>
-        <ul class="menu-dropdown" id="fichier-dropdown">
-          <li><a href="#" id="exporter-donnees">Exporter les données</a></li>
-          <li class="menu-separator"></li>
-          <li><a href="#" id="importer-donnees">Importer des données</a></li>
-          <li class="menu-separator"></li>
-          <li><a href="#" id="effacer-donnees">Effacer les données</a></li>
-        </ul>
-      </div>
-    </div>
-    
-    <div class="menubar-right">
-      <div class="search-container">
-        <input type="text" id="search-input" placeholder="Rechercher dans les RPs..." autocomplete="off">
-        <div class="search-icon">🔍</div>
-        <button type="button" id="clear-search" class="clear-search" style="display: none;">×</button>
-      </div>
-    </div>
-  </nav>
+                <div class="dropdown">
+                    <a href="#recits" class="dropdown-toggle" title="Les récits">
+                        <img src="./images/recits.png" alt="Récits" width="36" height="36" style="vertical-align:middle;">
+                        <span style="margin-left: 8px;">Les récits</span>
+                    </a>
+                    <div class="dropdown-menu">
+                        <div class="dropdown-submenu">
+                            <a href="#" class="dropdown-submenu-toggle">Fanfiction <span class="arrow">▶</span></a>
+                            <div class="dropdown-submenu-content">
+                                <div class="dropdown-sub-submenu">
+                                    <a href="#" class="dropdown-sub-submenu-toggle">Harry Potter <span class="arrow">▶</span></a>
+                                    <div class="dropdown-sub-submenu-content">
+                                        <a href="lesrecits/parapluie.html">L'invention du sortilège du parapluie</a>
+                                        <a href="lesrecits/botaniste.html">Le journal d'un botaniste</a>
+                                        <a href="lesrecits/flamel.html">Le journal intime de Nicolas Flamel</a>
+                                        <a href="lesrecits/tresor-fondateurs.html">Le trésor des fondateurs</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="dropdown-submenu">
+                            <a href="#" class="dropdown-submenu-toggle">Fiction <span class="arrow">▶</span></a>
+                            <div class="dropdown-submenu-content">
+                                <a href="lesrecits/grotte-du-loup.html">La grotte du loup</a>
+                                <a href="lesrecits/tableau-frappeur.html">Le tableau frappeur</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-  <!-- Input file caché pour l'import -->
-  <input type="file" id="import-file" accept=".json" style="display: none;">
-
-  <div class="container" style="display: none;">
-    <form id="rpForm" class="formulaire">
-      <div class="form-group">
-        <label for="rpName">Nom du RP</label>
-        <input type="text" id="rpName" placeholder="Ex: Aventure épique..." required>
-      </div>
-      
-      <div class="form-group">
-        <label for="partnerName">Partenaire</label>
-        <div class="autocomplete-container">
-          <input type="text" id="partnerName" placeholder="Nom du partenaire..." required autocomplete="off">
-          <div class="autocomplete-suggestions" id="partnerSuggestions"></div>
+                <div class="dropdown">
+                    <a href="#jeux" class="dropdown-toggle" title="Les jeux">
+                        <img src="./images/rpg.png" alt="RPG" width="36" height="36" style="vertical-align:middle;">
+                        <span style="margin-left: 8px;">Les jeux</span>
+                    </a>
+                    <div class="dropdown-menu">
+                        <a href="">Role play</a>
+                    </div>
+                </div>
+            </nav>
         </div>
-      </div>
-
-      <div class="form-group">
-        <label for="rpLocation">Lieu</label>
-        <div class="autocomplete-container">
-          <input type="text" id="rpLocation" placeholder="Ex: Poudlard, Konoha..." autocomplete="off">
-          <div class="autocomplete-suggestions" id="locationSuggestions"></div>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label for="rpType">Type de RP</label>
-        <div class="autocomplete-container">
-          <input type="text" id="rpType" placeholder="Ex: Social, Action..." autocomplete="off">
-          <div class="autocomplete-suggestions" id="typeSuggestions"></div>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label for="rpUniverse">Univers</label>
-        <div class="autocomplete-container">
-          <input type="text" id="rpUniverse" placeholder="Ex: Harry Potter, Naruto..." autocomplete="off">
-          <div class="autocomplete-suggestions" id="universeSuggestions"></div>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label for="rpUrl">Lien du RP (optionnel)</label>
-        <input type="url" id="rpUrl" placeholder="Ex: https://example.com/rp..." autocomplete="off">
-      </div>
-      
-      <div class="form-group">
-        <label for="turn">À qui de poster ?</label>
-        <select id="turn" required>
-          <option value="" disabled selected>Sélectionner...</option>
-          <option value="À ton partenaire de poster">À ton partenaire de poster</option>
-          <option value="À toi de poster">À toi de poster</option>
-          <option value="RP terminé">RP terminé</option>
-          <option value="RP abandonné">RP abandonné</option>
-        </select>
-      </div>
-      
-      <div class="form-group">
-        <button class="btn btn-primary" type="submit">
-          Ajouter
+        
+        <div class="header-right">
+            
+            <!-- Champ de recherche -->
+            <div class="search-container">
+                <input type="text" id="search-input" placeholder="Je cherche un article ou un récit..." autocomplete="off">
+                <div id="search-results" class="search-results"></div>
+            </div>
+            
+            <button id="dark-mode-toggle" class="dark-mode-btn">
+            <span class="sun-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z"/>
+                </svg>
+            </span>
+            <span class="moon-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 003.463-.69.75.75 0 01.981.98 10.503 10.503 0 01-9.694 6.46c-5.799 0-10.5-4.701-10.5-10.5 0-4.368 2.667-8.112 6.46-9.694a.75.75 0 01.818.162z"/>
+                </svg>
+            </span>
         </button>
-      </div>
+    </header>
 
-      <div class="form-group">
-        <div class="page-navigation-inline">
-          <button class="nav-btn active" id="nav-active" data-page="active">
-            RPs Actifs
-          </button>
-          <button class="nav-btn" id="nav-archive" data-page="archive">
-            RPs Archivés
-          </button>
+    <main>
+
+<!----------- Carousel des articles ----------------------------->
+        <section class="carousel-section">
+            <div class="carousel-container">
+                <div class="carousel-track">
+                    <div class="carousel-slide">
+                        <a href="lesrecits/parapluie.html" class="carousel-link">
+                            <img src="images/illustration/parapluie.png" alt="L'invention du sortilège du parapluie">
+                            <div class="carousel-caption">
+                                <h3>L'invention du sortilège du parapluie</h3>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="carousel-slide">
+                        <a href="lesrecits/botaniste.html" class="carousel-link">
+                            <img src="images/illustration/botaniste.png" alt="Le journal d'un botaniste">
+                            <div class="carousel-caption">
+                                <h3>Le journal d'un botaniste</h3>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="carousel-slide">
+                        <a href="lesrecits/flamel.html" class="carousel-link">
+                            <img src="images/illustration/flamel.png" alt="Le journal intime de Nicolas Flamel">
+                            <div class="carousel-caption">
+                                <h3>Le journal intime de Nicolas Flamel</h3>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="carousel-slide">
+                        <a href="lesrecits/grotte-du-loup.html" class="carousel-link">
+                            <img src="images/loup.png" alt="La grotte du loup">
+                            <div class="carousel-caption">
+                                <h3>La grotte du loup</h3>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="carousel-slide">
+                        <a href="lesrecits/tableau-frappeur.html" class="carousel-link">
+                            <img src="images/tableau.jpg" alt="Le tableau frappeur">
+                            <div class="carousel-caption">
+                                <h3>Le tableau frappeur</h3>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+                <button class="carousel-btn carousel-prev" aria-label="Article précédent">‹</button>
+                <button class="carousel-btn carousel-next" aria-label="Article suivant">›</button>
+                <div class="carousel-indicators">
+                    <button class="indicator active" data-slide="0"></button>
+                    <button class="indicator" data-slide="1"></button>
+                    <button class="indicator" data-slide="2"></button>
+                    <button class="indicator" data-slide="3"></button>
+                    <button class="indicator" data-slide="4"></button>
+                </div>
+            </div>
+        </section>
+
+<!------------------ Section présentation du portfolio -------------------------->
+
+        <section class="portfolio-presentation">
+            <div class="presentation-container">
+                <div class="presentation-content">
+                    <h2>Bienvenue</h2>
+                    <p>Ce portfolio rassemble mes créations, des récits fantastiques aux articles traitant de différents sujets. Chaque texte est une invitation à explorer des mondes imaginaires ou à découvrir différents thèmes abordés dans mes publications.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+<!---------------footer--------------------------->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <a href="mailto:jacques.bobbio@outlook.fr" class="contact-btn">Me contacter</a>
+            </div>
         </div>
-      </div>
-    </form>
+    </footer>
 
-    <!-- Contrôles de filtrage pour RPs actifs -->
-    <div class="view-controls" id="controls-active">
-      <div class="cards-filter">
-        <span class="filter-label">Filtre :</span>
-        <select id="view-filter">
-          <option value="all">Tous les RPs actifs</option>
-          <option value="À toi de poster">À toi de poster</option>
-          <option value="À ton partenaire de poster">À ton partenaire de poster</option>
-        </select>
-      </div>
-      <div class="cards-filter">
-        <span class="filter-label">Trier par :</span>
-        <select id="sort-select">
-          <option value="time-desc">Plus récent d'abord</option>
-          <option value="time-asc">Plus ancien d'abord</option>
-          <option value="partner-asc">Partenaire A-Z</option>
-          <option value="partner-desc">Partenaire Z-A</option>
-        </select>
-      </div>
-    </div>
 
-    <!-- Contrôles de filtrage pour RPs archivés -->
-    <div class="view-controls" id="controls-archive" style="display: none;">
-      <div class="cards-filter">
-        <span class="filter-label">Filtre :</span>
-        <select id="view-filter-archive">
-          <option value="all">Tous les RPs archivés</option>
-          <option value="RP terminé">RPs terminés</option>
-          <option value="RP abandonné">RPs abandonnés</option>
-        </select>
-      </div>
-      <div class="cards-filter">
-        <span class="filter-label">Trier par :</span>
-        <select id="sort-select-archive">
-          <option value="time-desc">Plus récent d'abord</option>
-          <option value="time-asc">Plus ancien d'abord</option>
-          <option value="partner-asc">Partenaire A-Z</option>
-          <option value="partner-desc">Partenaire Z-A</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- Vue cartes RPs actifs -->
-    <div id="page-active" class="page-content">
-      <div id="cards-view" class="cards-container">
-        <!-- Les cartes RPs actifs seront ajoutées ici -->
-      </div>
-
-      <!-- État vide pour les RPs actifs -->
-      <div id="cards-empty-state" class="cards-empty-state" style="display: none;">
-        <h3>Aucun RP actif</h3>
-        <p>Ajoutez votre premier RP pour commencer le suivi !</p>
-      </div>
-    </div>
-
-    <!-- Vue cartes RPs archivés -->
-    <div id="page-archive" class="page-content" style="display: none;">
-      <div id="cards-view-archive" class="cards-container">
-        <!-- Les cartes RPs archivés seront ajoutées ici -->
-      </div>
-
-      <!-- État vide pour les RPs archivés -->
-      <div id="cards-empty-state-archive" class="cards-empty-state" style="display: none;">
-        <h3>Aucun RP archivé</h3>
-        <p>Les RPs terminés ou abandonnés apparaîtront ici.</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Zone de notifications -->
-  <div id="notifications"></div>
-
-  <script src="js/google-auth.js"></script>
-  <script type="module" src="js/renderer.js"></script>
-  
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js')
-          .then(reg => console.log('✅ Service Worker enregistré:', reg.scope))
-          .catch(err => console.warn('SW échec:', err));
-      });
-    }
-  </script>
+    <script src="carousel/scrypt.js"></script>
+    <script src="javascript/cursor-animation.js"></script>
+    <!-- Scripts d'authentification -->
+    <script src="javascript/email-service.js"></script>
+    <script src="javascript/auth-manager.js"></script>
 </body>
 </html>
