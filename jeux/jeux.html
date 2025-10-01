@@ -30,7 +30,7 @@
                     <h3>Informations de base</h3>
                     
                     <!-- Image du sorcier -->
-                    <div class="character-image">
+                    <div class="character-image" id="characterImage" style="display: none;">
                         <img src="../images/jeux/sorcier.png" alt="Sorcier" style="max-width: 150px; height: auto; display: block; margin: 0 auto 20px;">
                     </div>
                     
@@ -87,6 +87,17 @@
     <!-- Scripts en mode local -->
     <script src="../javascript/character-manager.js"></script>
     <script src="../javascript/jeux.js"></script>
+    <script>
+        // Afficher/cacher l'image selon le type sélectionné
+        document.getElementById('char-type').addEventListener('change', function() {
+            const characterImage = document.getElementById('characterImage');
+            if (this.value === 'sorcier') {
+                characterImage.style.display = 'block';
+            } else {
+                characterImage.style.display = 'none';
+            }
+        });
+    </script>
 </body>
 </html>
 
