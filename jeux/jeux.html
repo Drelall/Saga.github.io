@@ -7,39 +7,6 @@
     <link rel="stylesheet" href="../style.css">
     <!-- Mode local - pas de dépendances externes -->
     <!-- Le style est déplacé dans style.css -->
-    <style>
-        /* Forcer le curseur personnalisé sur TOUS les éléments de la modal */
-        #characterModal,
-        #characterModal *,
-        #characterModal *::before,
-        #characterModal *::after {
-            cursor: url('../images/pointeur.png'), default !important;
-        }
-        
-        /* Forcer spécifiquement sur les éléments de formulaire */
-        #characterModal select,
-        #characterModal select *,
-        #characterModal option,
-        #characterModal input,
-        #characterModal button,
-        #characterModal label,
-        #characterModal div {
-            cursor: url('../images/pointeur.png'), default !important;
-        }
-        
-        /* Pour tous les états des éléments interactifs */
-        #characterModal select:hover,
-        #characterModal select:focus,
-        #characterModal select:active,
-        #characterModal option:hover,
-        #characterModal option:focus,
-        #characterModal input:hover,
-        #characterModal input:focus,
-        #characterModal button:hover,
-        #characterModal button:focus {
-            cursor: url('../images/pointeur.png'), pointer !important;
-        }
-    </style>
 </head>
 <body>
     <canvas id="gameCanvas" width="800" height="600"></canvas>
@@ -87,6 +54,39 @@
                                 <option value="">Choisir d'abord un type</option>
                             </select>
                         </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="char-deity">Divinité :</label>
+                            <select id="char-deity" name="deity" disabled style="cursor: url('../images/pointeur.png'), pointer;">
+                                <option value="">Choisir d'abord un type</option>
+                            </select>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Boutons d'action -->
+                <div class="action-buttons">
+                    <div>
+                        <button type="button" id="newCharacter" class="btn-secondary" style="cursor: url('../images/pointeur.png'), pointer;"> Nouveau</button>
+                        <button type="button" id="loadCharacter" class="btn-secondary" style="cursor: url('../images/pointeur.png'), pointer;"> Charger</button>
+                        <input type="file" id="fileInput" accept=".json" style="display: none;">
+                        <button type="button" id="saveCharacter" class="btn-secondary" style="cursor: url('../images/pointeur.png'), pointer;"> Sauvegarder</button>
+                        <span style="float:right;">
+                            <button type="button" id="playCharacter" class="btn-secondary btn-green-outline" style="cursor: url('../images/pointeur.png'), pointer;"> Jouer</button>
+                        </span>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Scripts en mode local -->
+    <script src="../javascript/character-manager.js"></script>
+    <script src="../javascript/jeux.js"></script>
+    <script src="../javascript/character-display.js"></script>
+</body>
+</html>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
