@@ -7,7 +7,39 @@
     <link rel="stylesheet" href="../style.css">
     <!-- Mode local - pas de dépendances externes -->
     <!-- Le style est déplacé dans style.css -->
-  
+    <style>
+        /* Forcer le curseur personnalisé sur TOUS les éléments de la modal */
+        #characterModal,
+        #characterModal *,
+        #characterModal *::before,
+        #characterModal *::after {
+            cursor: url('../images/pointeur.png'), default !important;
+        }
+        
+        /* Forcer spécifiquement sur les éléments de formulaire */
+        #characterModal select,
+        #characterModal select *,
+        #characterModal option,
+        #characterModal input,
+        #characterModal button,
+        #characterModal label,
+        #characterModal div {
+            cursor: url('../images/pointeur.png'), default !important;
+        }
+        
+        /* Pour tous les états des éléments interactifs */
+        #characterModal select:hover,
+        #characterModal select:focus,
+        #characterModal select:active,
+        #characterModal option:hover,
+        #characterModal option:focus,
+        #characterModal input:hover,
+        #characterModal input:focus,
+        #characterModal button:hover,
+        #characterModal button:focus {
+            cursor: url('../images/pointeur.png'), pointer !important;
+        }
+    </style>
 </head>
 <body>
     <canvas id="gameCanvas" width="800" height="600"></canvas>
@@ -87,17 +119,6 @@
     <script src="../javascript/character-manager.js"></script>
     <script src="../javascript/jeux.js"></script>
     <script src="../javascript/character-display.js"></script>
-</body>
-</html>
-</html>
-            const characterImage = document.getElementById('characterImage');
-            if (this.value === 'sorcier') {
-                characterImage.style.display = 'block';
-            } else {
-                characterImage.style.display = 'none';
-            }
-        });
-    </script>
 </body>
 </html>
 
