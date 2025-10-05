@@ -122,7 +122,7 @@ class CharacterSheetManager {
                             <button id="closeModal" class="close-btn">&times;</button>
                         </div>
                         <div style="padding: 30px; text-align: center; color: #f5deb3;">
-                            <h1 style="color: #28a745; margin-bottom: 30px;">Bienvenue ${this.character.name ? this.character.name : 'Aventurier'} dans l'aventure !</h1>
+                            <h1 style="color: #28a745; margin-bottom: 30px;">Bienvenue ${this.character.name ? this.character.name : 'Aventurier'} !</h1>
                             <div style="background: rgba(34, 109, 84, 0.1); border: 1px solid #226d54; border-radius: 8px; padding: 20px; margin: 20px 0;">
                                 <p><strong>Type :</strong> ${this.character.type || '-'}</p>
                                 <p><strong>Classe :</strong> ${this.character.class || '-'}</p>
