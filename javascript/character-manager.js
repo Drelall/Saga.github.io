@@ -117,19 +117,16 @@ class CharacterSheetManager {
                 const modal = document.getElementById('characterModal');
                 modal.innerHTML = `
                     <div class="character-sheet">
-                        <div class="character-header">
-                            <h2>Démarrage de l'Aventure</h2>
+                        <div class="character-header" style="border: none;">
                             <button id="closeModal" class="close-btn">&times;</button>
                         </div>
                         <div style="padding: 30px; text-align: center; color: #f5deb3;">
-                            <h1 style="color: #28a745; margin-bottom: 30px;">Bienvenue ${this.character.name ? this.character.name : 'Aventurier'} !</h1>
+                            <h1 style="color: #28a745; margin-bottom: 30px;">Bienvenue ${this.character.name ? this.character.name : 'Aventurier'}</h1>
                             <div style="background: rgba(34, 109, 84, 0.1); border: 1px solid #226d54; border-radius: 8px; padding: 20px; margin: 20px 0;">
                                 <p><strong>Type :</strong> ${this.character.type || '-'}</p>
                                 <p><strong>Classe :</strong> ${this.character.class || '-'}</p>
                                 <p><strong>Divinité :</strong> ${this.character.deity || '-'}</p>
                             </div>
-                            <hr style="border-color: #226d54; margin: 30px 0;">
-                            <p style="font-size: 1.2rem; color: #f5deb3;">Le jeu commence ici...</p>
                             <div style="margin-top: 30px;">
                                 <button type="button" id="backToCharacter" class="btn-secondary">Retour à la fiche</button>
                                 <button type="button" id="startGame" class="btn-primary">Commencer l'aventure</button>
