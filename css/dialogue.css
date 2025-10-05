@@ -1,0 +1,88 @@
+#dialogue-box {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    width: 80%;
+    max-width: 600px;
+    background: linear-gradient(135deg, #2c1810, #4a2c1a);
+    border: 3px solid #8b6914;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+    opacity: 0;
+    transition: all 0.3s ease;
+    font-family: 'Cinzel', serif;
+    color: #f4e4bc;
+}
+
+#dialogue-box.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+#dialogue-box.hide {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+}
+
+.dialogue-character {
+    font-size: 20px;
+    font-weight: bold;
+    color: #ffd700;
+    margin-bottom: 15px;
+    text-align: center;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.dialogue-text {
+    font-size: 16px;
+    line-height: 1.6;
+    margin-bottom: 20px;
+    text-align: justify;
+    min-height: 100px;
+    white-space: pre-wrap;
+}
+
+.dialogue-continue {
+    text-align: center;
+    font-size: 14px;
+    color: #8b6914;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    cursor: pointer;
+    font-style: italic;
+}
+
+.dialogue-continue:hover {
+    color: #ffd700;
+}
+
+/* Overlay sombre */
+#dialogue-box::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: -1;
+}
+
+/* Animation de pulsation pour attirer l'attention */
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.character-clickable {
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.character-clickable:hover {
+    transform: scale(1.1);
+    animation: pulse 2s infinite;
+}

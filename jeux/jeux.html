@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jeu du Tableau à Poudlard</title>
     <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="../css/dialogue.css">
     <!-- Mode local - pas de dépendances externes -->
     <!-- Le style est déplacé dans style.css -->
 </head>
@@ -28,7 +29,7 @@
                     
                     <!-- Image du sorcier -->
                     <div class="character-image" id="characterImage" style="display: none;">
-                        <img src="../images/jeux/sorcier.png" alt="Sorcier" style="max-width: 150px; height: auto; display: block; margin: 0 auto 20px; border-radius: 15px;">
+                        <img src="../images/jeux/sorcier.png" alt="Sorcier" style="max-width: 150px; height: auto; display: block; margin: 0 auto 20px; border-radius: 15px; cursor: url('../images/pointeur.png'), pointer;" class="character-clickable" onclick="showSorcierDialogue()">
                     </div>
                     
                     <div class="form-row">
@@ -85,39 +86,138 @@
     <script src="../javascript/character-manager.js"></script>
     <script src="../javascript/jeux.js"></script>
     <script src="../javascript/character-display.js"></script>
+    
+    <script>
+        // Système de dialogue intégré
+        class DialogueSystem {
+            constructor() {
+                this.isDialogueActive = false;
+                this.typewriterSpeed = 5; // Très rapide : 5ms par caractère
+            }
+
+            showDialogue(text, characterName = 'Sorcier') {
+                if (this.isDialogueActive) return;
+                
+                this.isDialogueActive = true;
+                
+                // Créer l'overlay
+                const overlay = document.createElement('div');
+                overlay.id = 'dialogue-overlay';
+                overlay.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100vw;
+                    height: 100vh;
+                    background: rgba(0, 0, 0, 0.7);
+                    z-index: 999;
+                `;
+                
+                // Créer la boîte de dialogue
+                const dialogueBox = document.createElement('div');
+                dialogueBox.id = 'dialogue-box';
+                dialogueBox.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%) scale(0.8);
+                    width: 80%;
+                    max-width: 600px;
+                    background: linear-gradient(135deg, #2c1810, #4a2c1a);
+                    border: 3px solid #8b6914;
+                    border-radius: 15px;
+                    padding: 25px;
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+                    z-index: 1000;
+                    opacity: 0;
+                    transition: all 0.3s ease;
+                    font-family: 'Cinzel', serif;
+                    color: #f4e4bc;
+                `;
+                
+                dialogueBox.innerHTML = `
+                    <div style="font-size: 20px; font-weight: bold; color: #ffd700; margin-bottom: 15px; text-align: center; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);">${characterName}</div>
+                    <div id="dialogue-text" style="font-size: 16px; line-height: 1.6; margin-bottom: 20px; text-align: justify; min-height: 100px; white-space: pre-wrap;"></div>
+                    <div id="dialogue-continue" style="text-align: center; font-size: 14px; color: #8b6914; opacity: 0; transition: opacity 0.3s ease; cursor: pointer; font-style: italic;">Cliquez pour continuer...</div>
+                `;
+                
+                document.body.appendChild(overlay);
+                document.body.appendChild(dialogueBox);
+                
+                // Animation d'apparition
+                setTimeout(() => {
+                    dialogueBox.style.opacity = '1';
+                    dialogueBox.style.transform = 'translate(-50%, -50%) scale(1)';
+                    this.typewriterEffect(text);
+                }, 100);
+                
+                // Fermer au clic
+                const closeDialogue = () => {
+                    dialogueBox.style.opacity = '0';
+                    dialogueBox.style.transform = 'translate(-50%, -50%) scale(0.8)';
+                    setTimeout(() => {
+                        if (overlay.parentNode) overlay.remove();
+                        if (dialogueBox.parentNode) dialogueBox.remove();
+                        this.isDialogueActive = false;
+                    }, 300);
+                };
+                
+                overlay.addEventListener('click', closeDialogue);
+                dialogueBox.addEventListener('click', closeDialogue);
+                
+                // Fermer avec Escape
+                const handleEscape = (event) => {
+                    if (event.key === 'Escape') {
+                        closeDialogue();
+                        document.removeEventListener('keydown', handleEscape);
+                    }
+                };
+                document.addEventListener('keydown', handleEscape);
+            }
+            
+            typewriterEffect(text) {
+                const textElement = document.getElementById('dialogue-text');
+                const continueElement = document.getElementById('dialogue-continue');
+                let index = 0;
+                
+                const typeInterval = setInterval(() => {
+                    // Ajouter 3 caractères à la fois pour un effet très rapide
+                    for (let i = 0; i < 3 && index < text.length; i++) {
+                        textElement.textContent += text[index];
+                        index++;
+                    }
+                    
+                    if (index >= text.length) {
+                        clearInterval(typeInterval);
+                        continueElement.style.opacity = '1';
+                    }
+                }, this.typewriterSpeed);
+            }
+        }
+
+        // Créer l'instance globale
+        const dialogueSystem = new DialogueSystem();
+
+        // Texte de dialogue du sorcier
+        const sorcierDialogue = `Si vous avez réussi à franchir le portail, c'est que votre esprit a enfin saisi la vraie nature de ce monde. Seuls les sorciers sont capables d'arriver jusqu'ici. Ils se divisent en plusieurs classes : nécromancien, druide, chaman, alchimiste, enchanteur, occultiste, élémentaliste, thaumaturge, et démonologue. Une seule de ces disciplines est faite pour vous.
+
+Mais, n'ayez crainte, vous trouverez votre voie bien assez tôt. Pour le moment il vous reste encore beaucoup à apprendre…
+
+Tout devient soudainement blanc autour de vous… Quelques secondes plus tard, vous vous réveillez chez vous.`;
+
+        // Fonction pour afficher le dialogue du sorcier
+        function showSorcierDialogue() {
+            dialogueSystem.showDialogue(sorcierDialogue, 'Drelall le Sorcier');
+        }
+    </script>
 </body>
 </html>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="char-deity">Divinité :</label>
-                            <select id="char-deity" name="deity" disabled style="cursor: url('../images/pointeur.png'), pointer;">
-                                <option value="">Choisir d'abord un type</option>
-                            </select>
-                        </div>
-                    </div>
-                </section>
 
-                <!-- Boutons d'action -->
-                <div class="action-buttons">
-                    <div>
-                        <button type="button" id="newCharacter" class="btn-secondary" style="cursor: url('../images/pointeur.png'), pointer;"> Nouveau</button>
-                        <button type="button" id="loadCharacter" class="btn-secondary" style="cursor: url('../images/pointeur.png'), pointer;"> Charger</button>
-                        <input type="file" id="fileInput" accept=".json" style="display: none;">
-                        <button type="button" id="saveCharacter" class="btn-secondary" style="cursor: url('../images/pointeur.png'), pointer;"> Sauvegarder</button>
-                        <span style="float:right;">
-                            <button type="button" id="playCharacter" class="btn-secondary btn-green-outline" style="cursor: url('../images/pointeur.png'), pointer;"> Jouer</button>
-                        </span>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
-    
-    <!-- Scripts en mode local -->
-    <script src="../javascript/character-manager.js"></script>
-    <script src="../javascript/jeux.js"></script>
-    <script src="../javascript/character-display.js"></script>
+        // Fonction pour afficher le dialogue du sorcier
+        function showSorcierDialogue() {
+            dialogueSystem.showDialogue(sorcierDialogue, 'Drelall le Sorcier');
+        }
+    </script>
 </body>
 </html>
 
