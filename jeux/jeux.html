@@ -18,13 +18,13 @@
     
     <!-- Modal de fiche personnage -->
     <div id="characterModal" class="character-modal">
-        <div class="character-sheet">
-            <div class="character-header">
+        <div class="character-sheet" style="background-image: url('../images/illustration/lemur.png'); background-size: cover; background-position: center; background-repeat: no-repeat;">
+            <div class="character-header" style="background: rgba(0, 0, 0, 0.8); border-radius: 8px 8px 0 0;">
                 <h2>Fiche de Personnage</h2>
                 <button id="closeModal" class="close-btn">&times;</button>
             </div>
 
-            <form id="characterForm">
+            <form id="characterForm" style="background: rgba(0, 0, 0, 0.7); border-radius: 0 0 8px 8px; padding: 20px;">
                 <!-- Informations de base -->
                 <section class="form-section">
                     <h3>Informations de base</h3>
@@ -87,9 +87,9 @@
     <!-- Scripts en mode local -->
     <script src="../javascript/character-manager.js"></script>
     <script src="../javascript/jeux.js"></script>
-    <script>
-        // Afficher/cacher l'image selon le type sélectionné
-        document.getElementById('char-type').addEventListener('change', function() {
+    <script src="../javascript/character-display.js"></script>
+</body>
+</html>
             const characterImage = document.getElementById('characterImage');
             if (this.value === 'sorcier') {
                 characterImage.style.display = 'block';
