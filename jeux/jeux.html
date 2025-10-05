@@ -17,10 +17,10 @@
     <div class="frame-hover-area" id="frameHoverArea"></div>
     
     <!-- Modal de fiche personnage -->
-    <div id="characterModal" class="character-modal">
-        <div class="character-sheet" style="background-image: url('../images/illustration/lemur.png'); background-size: cover; background-position: center; background-repeat: no-repeat;">
+    <div id="characterModal" class="character-modal" style="cursor: url('../images/pointeur.png'), default;">
+        <div class="character-sheet" style="background-image: url('../images/illustration/lemur.png'); background-size: cover; background-position: center; background-repeat: no-repeat; cursor: url('../images/pointeur.png'), default;">
             <div class="character-header" style="border: none; border-bottom: none;">
-                <button id="closeModal" class="close-btn">&times;</button>
+                <button id="closeModal" class="close-btn" style="cursor: url('../images/pointeur.png'), pointer;">&times;</button>
             </div>
 
             <form id="characterForm" style="background: rgba(0, 0, 0, 0.7); border-radius: 0 0 8px 8px; padding: 20px;">
@@ -36,13 +36,13 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="char-name">Nom du personnage :</label>
-                            <input type="text" id="char-name" name="name" class="input-uniform" placeholder="...">
+                            <input type="text" id="char-name" name="name" class="input-uniform" placeholder="..." style="cursor: url('../images/pointeur.png'), text;">
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
                             <label for="char-type">Type de personnage :</label>
-                            <select id="char-type" name="type">
+                            <select id="char-type" name="type" style="cursor: url('../images/pointeur.png'), pointer;">
                                 <option value="">Choisir un type</option>
                                 <!--<option value="agent">Agent du Gouvernement</option>-->
                                 <!--<option value="initie">Initié</option>-->
@@ -52,7 +52,7 @@
                         </div>
                         <div class="form-group">
                             <label for="char-class">Classe :</label>
-                            <select id="char-class" name="class" disabled>
+                            <select id="char-class" name="class" disabled style="cursor: url('../images/pointeur.png'), pointer;">
                                 <option value="">Choisir d'abord un type</option>
                             </select>
                         </div>
@@ -60,7 +60,7 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="char-deity">Divinité :</label>
-                            <select id="char-deity" name="deity" disabled>
+                            <select id="char-deity" name="deity" disabled style="cursor: url('../images/pointeur.png'), pointer;">
                                 <option value="">Choisir d'abord un type</option>
                             </select>
                         </div>
@@ -70,12 +70,12 @@
                 <!-- Boutons d'action -->
                 <div class="action-buttons">
                     <div>
-                        <button type="button" id="newCharacter" class="btn-secondary"> Nouveau</button>
-                        <button type="button" id="loadCharacter" class="btn-secondary"> Charger</button>
+                        <button type="button" id="newCharacter" class="btn-secondary" style="cursor: url('../images/pointeur.png'), pointer;"> Nouveau</button>
+                        <button type="button" id="loadCharacter" class="btn-secondary" style="cursor: url('../images/pointeur.png'), pointer;"> Charger</button>
                         <input type="file" id="fileInput" accept=".json" style="display: none;">
-                        <button type="button" id="saveCharacter" class="btn-secondary"> Sauvegarder</button>
+                        <button type="button" id="saveCharacter" class="btn-secondary" style="cursor: url('../images/pointeur.png'), pointer;"> Sauvegarder</button>
                         <span style="float:right;">
-                            <button type="button" id="playCharacter" class="btn-secondary btn-green-outline"> Jouer</button>
+                            <button type="button" id="playCharacter" class="btn-secondary btn-green-outline" style="cursor: url('../images/pointeur.png'), pointer;"> Jouer</button>
                         </span>
                     </div>
                 </div>
