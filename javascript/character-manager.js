@@ -156,4 +156,16 @@ class CharacterSheetManager {
 // Initialisation globale
 document.addEventListener('DOMContentLoaded', () => {
     window.characterSheetManager = new CharacterSheetManager();
+
+    // Désactiver le bouton Jouer pour éviter l'affichage de la fenêtre
+    const playButton = document.getElementById('playCharacter');
+    if (playButton) {
+        // Supprimer tous les événements existants
+        playButton.onclick = null;
+        playButton.removeEventListener('click', showCharacterSummary);
+        
+        // Désactiver le bouton
+        playButton.disabled = true;
+        playButton.textContent = 'Jouer (en développement)';
+    }
 });

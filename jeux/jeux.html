@@ -6,8 +6,6 @@
     <title>Jeu du Tableau à Poudlard</title>
     <link rel="stylesheet" href="../style.css">
     <link rel="stylesheet" href="../css/dialogue.css">
-    <!-- Mode local - pas de dépendances externes -->
-    <!-- Le style est déplacé dans style.css -->
 </head>
 <body>
     <canvas id="gameCanvas" width="800" height="600"></canvas>
@@ -24,10 +22,7 @@
             </div>
 
             <form id="characterForm" style="background: rgba(0, 0, 0, 0.7); border-radius: 0 0 8px 8px; padding: 20px;">
-                <!-- Informations de base -->
                 <section class="form-section">
-                    
-                    <!-- Image du sorcier -->
                     <div class="character-image" id="characterImage" style="display: none;">
                         <div class="magic-card-container" style="text-align: center;">
                             <img src="../images/jeux/sorcier.png" alt="Sorcier" style="max-width: 150px; height: auto; display: block; margin: 0 auto 20px; border-radius: 15px;" class="character-clickable magic-card" onclick="showSorcierDialogue()">
@@ -45,10 +40,7 @@
                             <label for="char-type">Type de personnage :</label>
                             <select id="char-type" name="type" style="cursor: url('../images/pointeur.png'), pointer;">
                                 <option value="">Choisir un type</option>
-                                <!--<option value="agent">Agent du Gouvernement</option>-->
-                                <!--<option value="initie">Initié</option>-->
                                 <option value="sorcier">Sorcier</option>
-                                <!--<option value="citoyen">Citoyen</option>-->
                             </select>
                         </div>
                         <div class="form-group">
@@ -67,13 +59,21 @@
                         </div>
                     </div>
                     
-                    <!-- Bouton Jouer -->
+                    <!-- Bouton Jouer - désactivé pour supprimer la fenêtre -->
                     <div style="text-align: center; margin-top: 20px;">
-                        <button type="button" id="playCharacter" class="btn-secondary btn-green-outline" style="cursor: url('../images/pointeur.png'), pointer;"> Jouer</button>
+                        <button type="button" id="playCharacter" class="btn-secondary btn-green-outline" style="cursor: url('../images/pointeur.png'), pointer;" disabled> Jouer (en développement)</button>
                     </div>
                 </section>
             </form>
         </div>
+    </div>
+    
+    <script src="../js/dialogue.js"></script>
+    <script src="../javascript/character-manager.js"></script>
+    <script src="../javascript/jeux.js"></script>
+    <script src="../javascript/character-display.js"></script>
+</body>
+</html>
     </div>
     
     <!-- Scripts en mode local -->
