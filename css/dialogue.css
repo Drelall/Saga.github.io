@@ -85,3 +85,86 @@
     transform: scale(1.1);
     animation: pulse 2s infinite;
 }
+
+/* Effets magiques pour la carte du sorcier */
+.magic-card-container {
+    position: relative;
+    display: inline-block;
+    text-align: center;
+    width: 100%;
+}
+
+.magic-card {
+    position: relative;
+    border: 2px solid #ffd700;
+    margin: 0 auto;
+    box-shadow: 
+        0 0 20px rgba(255, 215, 0, 0.6),
+        0 0 40px rgba(255, 215, 0, 0.4),
+        inset 0 0 20px rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+    animation: magicGlow 2s ease-in-out infinite alternate;
+}
+
+.magic-card:hover {
+    transform: scale(1.05) rotate(1deg);
+    box-shadow: 
+        0 0 30px rgba(255, 215, 0, 0.8),
+        0 0 60px rgba(255, 215, 0, 0.6),
+        0 0 80px rgba(138, 43, 226, 0.4),
+        inset 0 0 30px rgba(255, 255, 255, 0.2);
+    animation: magicPulse 0.8s ease-in-out infinite;
+}
+
+/* Animations */
+@keyframes magicGlow {
+    0% { 
+        box-shadow: 
+            0 0 20px rgba(255, 215, 0, 0.6),
+            0 0 40px rgba(255, 215, 0, 0.4);
+    }
+    100% { 
+        box-shadow: 
+            0 0 30px rgba(255, 215, 0, 0.8),
+            0 0 50px rgba(138, 43, 226, 0.5);
+    }
+}
+
+@keyframes magicPulse {
+    0%, 100% { transform: scale(1.05) rotate(1deg); }
+    50% { transform: scale(1.1) rotate(-1deg); }
+}
+    bottom: -10px;
+    right: -10px;
+    animation-delay: 1s;
+}
+
+/* Animations */
+@keyframes magicGlow {
+    0% { 
+        box-shadow: 
+            0 0 20px rgba(255, 215, 0, 0.6),
+            0 0 40px rgba(255, 215, 0, 0.4);
+    }
+    100% { 
+        box-shadow: 
+            0 0 30px rgba(255, 215, 0, 0.8),
+            0 0 50px rgba(138, 43, 226, 0.5);
+    }
+}
+
+@keyframes magicPulse {
+    0%, 100% { transform: scale(1.05) rotate(1deg); }
+    50% { transform: scale(1.1) rotate(-1deg); }
+}
+
+@keyframes sparkle {
+    0%, 100% { 
+        opacity: 0;
+        transform: rotate(0deg) scale(0.5);
+    }
+    50% { 
+        opacity: 1;
+        transform: rotate(180deg) scale(1);
+    }
+}
