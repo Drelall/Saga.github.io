@@ -134,10 +134,6 @@
     0%, 100% { transform: scale(1.05) rotate(1deg); }
     50% { transform: scale(1.1) rotate(-1deg); }
 }
-    bottom: -10px;
-    right: -10px;
-    animation-delay: 1s;
-}
 
 /* Animations */
 @keyframes magicGlow {
