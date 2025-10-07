@@ -8,59 +8,13 @@ class CharacterSheetManager {
         };
 
         this.universe = {
-            agent: {
-                name: 'Agent du Gouvernement',
-                classes: [
-                    { value: 'soldat', name: 'Soldat' },
-                    { value: 'archeologue', name: 'Archéologue' },
-                    { value: 'medecin', name: 'Médecin' },
-                    { value: 'ingenieur', name: 'Ingénieur' }
-                ],
-                deities: [
-                    { value: 'apophis', name: 'Apophis' },
-                    { value: 'thor', name: 'Thor' }
-                ]
-            },
-            initie: {
-                name: 'Initié',
-                classes: [
-                    { value: 'exorciste', name: 'Exorciste' },
-                    { value: 'tueur_monstre', name: 'Tueur de Monstre' },
-                    { value: 'chasseur_fantome', name: 'Chasseur de Fantôme' }
-                ],
-                deities: [
-                    { value: 'magicien_oz', name: 'Magicien d\'Oz' }
-                ]
-            },
             sorcier: {
                 name: 'Sorcier',
                 classes: [
-                    /*{ value: 'necromancien', name: 'Nécromancien' },*/
-                    /*{ value: 'druide', name: 'Druide' },*/
-                    /*{ value: 'chaman', name: 'Chaman' },*/
-                    /*{ value: 'alchimiste', name: 'Alchimiste' },*/
-                    { value: 'enchanteur', name: 'Enchanteur' },
-                    /*{ value: 'occultiste', name: 'Occultiste' },*/
-                    /*{ value: 'elementaliste', name: 'Élémentaliste' },*/
-                    /*{ value: 'thaumaturge', name: 'Thaumaturge' },*/
-                    /*{ value: 'demonologue', name: 'Démonologue' }*/
+                    { value: 'enchanteur', name: 'Enchanteur' }
                 ],
                 deities: [
-                    /*{ value: 'phenix', name: 'Le Phénix' },*/
-                    { value: 'dragons', name: 'Les Dragons' },
-                    /*{ value: 'elementaires', name: 'Les Élémentaires' },*/
-                    /*{ value: 'obscurium', name: 'L\'Obscurium' }*/
-                ]
-            },
-            citoyen: {
-                name: 'Citoyen',
-                classes: [
-                    { value: 'hacker', name: 'Hacker' },
-                    { value: 'lowtech', name: 'Lowtech' }
-                ],
-                deities: [
-                    { value: 'lapin_blanc', name: 'Le Lapin Blanc' },
-                    { value: 'grand_architecte', name: 'Le Grand Architecte' }
+                    { value: 'dragons', name: 'Les Dragons' }
                 ]
             }
         };
@@ -77,8 +31,7 @@ class CharacterSheetManager {
         const closeBtn = document.getElementById('closeModal');
         const frameHoverArea = document.getElementById('frameHoverArea');
         const typeSelect = document.getElementById('char-type');
-        const classSelect = document.getElementById('char-class');
-        const deitySelect = document.getElementById('char-deity');
+        const playBtn = document.getElementById('playCharacter');
 
         frameHoverArea.addEventListener('click', () => {
             console.log('Zone tableau cliquée, ouverture fiche personnage');
@@ -101,16 +54,6 @@ class CharacterSheetManager {
             }
         });
 
-        // Vérifier l'existence des boutons avant d'ajouter les event listeners
-        const saveBtn = document.getElementById('saveCharacter');
-        const loadBtn = document.getElementById('loadCharacter');
-        const newBtn = document.getElementById('newCharacter');
-        const playBtn = document.getElementById('playCharacter');
-
-        if (saveBtn) saveBtn.addEventListener('click', () => this.saveCharacterToFile());
-        if (loadBtn) loadBtn.addEventListener('click', () => this.loadCharacterFromFile());
-        if (newBtn) newBtn.addEventListener('click', () => this.newCharacter());
-        
         typeSelect.addEventListener('change', () => this.updateClassOptions());
 
         if (playBtn) {
@@ -168,87 +111,6 @@ class CharacterSheetManager {
         document.body.style.overflow = 'auto';
     }
 
-    saveCharacterToFile() {
-        this.updateCharacterFromForm();
-        const characterName = this.character.name || 'personnage_sans_nom';
-        const safeFileName = characterName.replace(/[^a-z0-9\s]/gi, '_').toLowerCase();
-        const fileName = `${safeFileName}_fiche_rpg.json`;
-        const characterData = {
-            ...this.character,
-            metadata: {
-                version: '1.0',
-                created: new Date().toISOString(),
-                lastModified: new Date().toISOString(),
-                application: 'Saga RPG Character Sheet'
-            }
-        };
-        const dataStr = JSON.stringify(characterData, null, 2);
-        const dataBlob = new Blob([dataStr], { type: 'application/json' });
-        const downloadLink = document.createElement('a');
-        downloadLink.href = URL.createObjectURL(dataBlob);
-        downloadLink.download = fileName;
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
-        URL.revokeObjectURL(downloadLink.href);
-    }
-
-    loadCharacterFromFile() {
-        const fileInput = document.getElementById('fileInput');
-        fileInput.onchange = (event) => this.handleFileLoad(event);
-        fileInput.click();
-    }
-
-    async processCharacterFile(file) {
-        if (!file.name.toLowerCase().endsWith('.json')) {
-            alert('Veuillez sélectionner un fichier JSON valide.');
-            return;
-        }
-        try {
-            const text = await file.text();
-            const characterData = JSON.parse(text);
-            if (this.validateCharacterData(characterData)) {
-                this.character = {
-                    name: characterData.name || '',
-                    type: characterData.type || '',
-                    class: characterData.class || '',
-                    deity: characterData.deity || ''
-                };
-                this.populateForm();
-            } else {
-                alert('Le fichier ne contient pas de données de personnage valides.');
-            }
-        } catch (error) {
-            console.error('Erreur lors du chargement:', error);
-            alert('Erreur lors de la lecture du fichier.');
-        }
-    }
-
-    handleFileLoad(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        this.processCharacterFile(file);
-        event.target.value = '';
-    }
-
-    validateCharacterData(data) {
-        if (!data || typeof data !== 'object') return false;
-        const requiredProps = ['name', 'type', 'class'];
-        return requiredProps.every(prop => data.hasOwnProperty(prop));
-    }
-
-    newCharacter() {
-        if (confirm('Créer un nouveau personnage ? Les données actuelles seront perdues.')) {
-            this.character = {
-                name: '',
-                type: '',
-                class: '',
-                deity: ''
-            };
-            this.populateForm();
-        }
-    }
-
     updateCharacterFromForm() {
         const form = document.getElementById('characterForm');
         const formData = new FormData(form);
@@ -256,16 +118,6 @@ class CharacterSheetManager {
         this.character.type = formData.get('type') || '';
         this.character.class = formData.get('class') || '';
         this.character.deity = formData.get('deity') || '';
-    }
-
-    populateForm() {
-        document.getElementById('char-name').value = this.character.name;
-        document.getElementById('char-type').value = this.character.type;
-        this.updateClassOptions();
-        setTimeout(() => {
-            document.getElementById('char-class').value = this.character.class;
-            document.getElementById('char-deity').value = this.character.deity;
-        }, 50);
     }
 
     updateClassOptions() {
