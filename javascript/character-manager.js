@@ -76,7 +76,6 @@ class CharacterSheetManager {
         const modal = document.getElementById('characterModal');
         const closeBtn = document.getElementById('closeModal');
         const frameHoverArea = document.getElementById('frameHoverArea');
-        const fileInput = document.getElementById('fileInput');
         const typeSelect = document.getElementById('char-type');
         const classSelect = document.getElementById('char-class');
         const deitySelect = document.getElementById('char-deity');
@@ -102,51 +101,59 @@ class CharacterSheetManager {
             }
         });
 
-        document.getElementById('saveCharacter').addEventListener('click', () => this.saveCharacterToFile());
-        document.getElementById('loadCharacter').addEventListener('click', () => this.loadCharacterFromFile());
-        document.getElementById('newCharacter').addEventListener('click', () => this.newCharacter());
+        // Vérifier l'existence des boutons avant d'ajouter les event listeners
+        const saveBtn = document.getElementById('saveCharacter');
+        const loadBtn = document.getElementById('loadCharacter');
+        const newBtn = document.getElementById('newCharacter');
+        const playBtn = document.getElementById('playCharacter');
+
+        if (saveBtn) saveBtn.addEventListener('click', () => this.saveCharacterToFile());
+        if (loadBtn) loadBtn.addEventListener('click', () => this.loadCharacterFromFile());
+        if (newBtn) newBtn.addEventListener('click', () => this.newCharacter());
+        
         typeSelect.addEventListener('change', () => this.updateClassOptions());
 
-        // Modification : afficher le jeu dans la modal au clic sur "Jouer"
-        document.getElementById('playCharacter').addEventListener('click', () => {
-            this.updateCharacterFromForm();
-            if (typeof window.sagaStart === 'function') {
-                window.sagaStart(this.character, document.getElementById('characterModal'));
-            } else {
-                // Fallback : affiche un message dans la modal en conservant la structure
-                const modal = document.getElementById('characterModal');
-                modal.innerHTML = `
-                    <div class="character-sheet" style="background-image: url('../images/illustration/lemur.png'); background-size: cover; background-position: center; background-repeat: no-repeat;">
-                        <div class="character-header" style="border: none;">
-                            <button id="closeModal" class="close-btn">&times;</button>
-                        </div>
-                        <div style="padding: 30px; text-align: center; color: #f5deb3; background: rgba(0, 0, 0, 0.7); border-radius: 10px; margin: 20px;">
-                            <h1 style="color: #28a745; margin-bottom: 30px;">Bienvenue ${this.character.name ? this.character.name : 'Aventurier'}</h1>
-                            <div style="background: rgba(34, 109, 84, 0.4); border: 1px solid #226d54; border-radius: 8px; padding: 20px; margin: 20px 0;">
-                                <p><strong>Type :</strong> ${this.character.type || '-'}</p>
-                                <p><strong>Classe :</strong> ${this.character.class || '-'}</p>
-                                <p><strong>Divinité :</strong> ${this.character.deity || '-'}</p>
+        if (playBtn) {
+            playBtn.addEventListener('click', () => {
+                this.updateCharacterFromForm();
+                if (typeof window.sagaStart === 'function') {
+                    window.sagaStart(this.character, document.getElementById('characterModal'));
+                } else {
+                    // Fallback : affiche un message dans la modal en conservant la structure
+                    const modal = document.getElementById('characterModal');
+                    modal.innerHTML = `
+                        <div class="character-sheet" style="background-image: url('../images/illustration/lemur.png'); background-size: cover; background-position: center; background-repeat: no-repeat;">
+                            <div class="character-header" style="border: none;">
+                                <button id="closeModal" class="close-btn">&times;</button>
                             </div>
-                            <div style="margin-top: 30px;">
-                                <button type="button" id="backToCharacter" class="btn-secondary">Retour à la fiche</button>
-                                <button type="button" id="startGame" class="btn-primary">Commencer l'aventure</button>
+                            <div style="padding: 30px; text-align: center; color: #f5deb3; background: rgba(0, 0, 0, 0.7); border-radius: 10px; margin: 20px;">
+                                <h1 style="color: #28a745; margin-bottom: 30px;">Bienvenue ${this.character.name ? this.character.name : 'Aventurier'}</h1>
+                                <div style="background: rgba(34, 109, 84, 0.4); border: 1px solid #226d54; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                                    <p><strong>Type :</strong> ${this.character.type || '-'}</p>
+                                    <p><strong>Classe :</strong> ${this.character.class || '-'}</p>
+                                    <p><strong>Divinité :</strong> ${this.character.deity || '-'}</p>
+                                </div>
+                                <div style="margin-top: 30px;">
+                                    <button type="button" id="backToCharacter" class="btn-secondary">Retour à la fiche</button>
+                                    <button type="button" id="startGame" class="btn-primary">Commencer l'aventure</button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                `;
-                
-                // Réattacher les événements pour les nouveaux boutons
-                document.getElementById('closeModal').addEventListener('click', () => this.closeModal());
-                document.getElementById('backToCharacter').addEventListener('click', () => {
-                    // Recharger la page pour revenir à la fiche personnage
-                    location.reload();
-                });
-                document.getElementById('startGame').addEventListener('click', () => {
-                    // Ici vous pouvez ajouter la logique pour démarrer le jeu
-                    alert('Le jeu va bientôt commencer !');
-                });
-            }
-        });
+                    `;
+                    
+                    // Réattacher les événements pour les nouveaux boutons
+                    document.getElementById('closeModal').addEventListener('click', () => this.closeModal());
+                    document.getElementById('backToCharacter').addEventListener('click', () => {
+                        // Recharger la page pour revenir à la fiche personnage
+                        location.reload();
+                    });
+                    document.getElementById('startGame').addEventListener('click', () => {
+                        // Ici vous pouvez ajouter la logique pour démarrer le jeu
+                        alert('Le jeu va bientôt commencer !');
+                    });
+                }
+            });
+        }
     }
 
     openModal() {
