@@ -1,8 +1,9 @@
 #dialogue-box {
     position: fixed;
-    top: 50%;
+    top: auto; /* Enlever le positionnement en haut */
+    bottom: 150px; /* Position depuis le bas */
     left: 50%;
-    transform: translate(-50%, -50%) scale(0.8);
+    transform: translateX(-50%) scale(0.8); /* Centrer seulement horizontalement */
     width: 80%;
     max-width: 600px;
     background: linear-gradient(135deg, #2c1810, #4a2c1a);
@@ -19,12 +20,12 @@
 
 #dialogue-box.show {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: translateX(-50%) scale(1);
 }
 
 #dialogue-box.hide {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.8);
+    transform: translateX(-50%) scale(0.8);
 }
 
 .dialogue-character {
